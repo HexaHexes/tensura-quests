@@ -24,10 +24,12 @@ gameplay state nor quest structure.
   `1.0.13` - the job-slot adapter touches internal classes, see Gotchas),
   Infinite Dungeon suite, Lightman's Currency (pinned `2.3.0.6`).
 
-**Test:** `./gradlew runGameTestServer` - `TensuraQuestsGameTests` (1 test).
-`expectedTests = 1` in `build.gradle` must match the `@GameTest` count. The
-run carries the FTB stack via `runtimeOnly` and is namespace-gated to
-`tensura_quests`.
+**Test:** `./gradlew runGameTestServer` - `TensuraQuestsGameTests` (1
+namespace-gate test) plus `FtbQuestsFrameworkGameTests` (5 framework tests:
+registration, SNBT round-trip, net round-trip, intake to completion with
+logging, TeamData persistence), 6 total. `expectedTests = 6` in
+`build.gradle` must match the `@GameTest` count. The run carries the FTB
+stack via `runtimeOnly` and is namespace-gated to `tensura_quests`.
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).
@@ -51,7 +53,11 @@ run carries the FTB stack via `runtimeOnly` and is namespace-gated to
 - FTB Quests' registration APIs (`TaskTypes.register`, `RewardTypes.register`)
   live outside its stable `api` package. All FTB Quests surface contact goes
   through `FtbQuestsBridge`; the GameTest suite must cover registration and
-  serialization on every build.
+  serialization on every build. Facade discipline (INT-003): the bridge is the
+  only class importing `TaskTypes` and the only site that registers a type -
+  registering anywhere else splits the choke point that makes accepted risk
+  R4 survivable. Task classes may return the registered `TaskType` from
+  `getType()` and touch no other registry surface.
 - Stock FTB Quests task progress is per FTB Team. Per-player counters live in
   this mod's own persisted storage (see ADR-0002); never assume a task's
   built-in progress is per player.

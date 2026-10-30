@@ -1,0 +1,5 @@
+{
+  "ftbquests.task.tensura_quests.counter": "Counter",
+  "ftbquests.task.tensura_quests.counter.target": "Target",
+  "ftbquests.task.tensura_quests.counter.target.tooltip": "Progress required before the quest completes. Intake beyond it is clamped."
+}
