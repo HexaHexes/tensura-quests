@@ -1,0 +1,271 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.148'
+    id 'com.github.spotbugs' version '6.5.13'
+    id 'com.diffplug.spotless' version '8.10.4'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    // Keep in sync with rootProject.name in settings.gradle and mod_id in
+    // gradle.properties. The shipped jar is <archivesName>-<version>.jar.
+    archivesName = mod_id
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+// Game tests live in their own source set: they compile against main, and are
+// deliberately NOT part of sourceSets.main - so none of it is packaged into the
+// released jar. Declared before neoForge because the mods block below joins it.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + configurations.compileClasspath
+        runtimeClasspath += output + sourceSets.main.output + configurations.runtimeClasspath
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+        }
+
+        // Headless test runner. NeoForge's patched server Main boots a
+        // GameTestServer that runs every registered @GameTest and exits - no
+        // window, no live instance. This is the only verification gate.
+        // The namespace gate keeps the run to this repo's tests only, despite
+        // the FTB stack on the runtime classpath.
+        gameTestServer {
+            type = "gameTestServer"
+            gameDirectory = project.layout.projectDirectory.dir('run')
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'tensura_quests'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+            // The gametest source set joins the mod for the dev runs so
+            // @GameTestHolder is discovered from FML's scan data. It is still
+            // not in the jar - the jar only packages sourceSets.main.
+            sourceSet sourceSets.gametest
+        }
+    }
+}
+
+// Expand the ${...} placeholders in src/main/templates into the real
+// neoforge.mods.toml at build time, so mod identity is edited in one place
+// (gradle.properties) rather than duplicated in the toml.
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+            api_version            : api_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+// Feed the generated metadata in as a resource dir; passing the task provider
+// wires the dependency so the toml is generated before resources are processed.
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// JUnit suite: the CI junit check grades it and refuses to pass on an empty
+// run, so this configuration must stay wired in every derived repo.
+repositories {
+    mavenCentral()
+
+    // tensura-quests-api, from the org's GitHub Packages registry. Measured
+    // status codes when resolution fails: 401 means no credentials reached the
+    // registry, while 404 means credentials arrived but the coordinate or
+    // version is wrong. CI injects PACKAGE_READ_TOKEN as GITHUB_TOKEN on the
+    // Gradle steps; locally supply gpr.user / gpr.key in
+    // ~/.gradle/gradle.properties.
+    maven {
+        name = 'GitHubPackages'
+        url = uri('https://maven.pkg.github.com/HexaHexes/tensura-quests-api')
+        credentials {
+            username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
+            password = System.getenv('PACKAGE_READ_TOKEN') ?: System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
+        }
+    }
+
+    // The pack's FTB stack, pinned exactly via CurseMaven - never floating
+    // versions. The compatibility matrix in
+    // docs/research/compatibility-matrix.md records each coordinate and the
+    // version it was verified against.
+    maven {
+        name = 'CurseMaven'
+        url = uri('https://cursemaven.com')
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // tensura-quests-api is required in every context: the framework
+    // registers the contract type ids and, later, the outbound events
+    // producers fire. It is never packaged - the API ships as its own mod -
+    // and testImplementation puts it on the JUnit classpath. Dependencies
+    // resolve through Maven, never local folders.
+    compileOnly "org.bitwisemadness.tensuraquestsapi:tensura_quests_api:${api_version}"
+    runtimeOnly "org.bitwisemadness.tensuraquestsapi:tensura_quests_api:${api_version}"
+    testImplementation "org.bitwisemadness.tensuraquestsapi:tensura_quests_api:${api_version}"
+
+    // The pack's FTB Quests stack, compile-side and dev-runtime only: never
+    // packaged, never forced on consumers that already ship their own FTB
+    // install (neoforge.mods.toml declares the pack requirements). Pinned per
+    // the brief: FTB Quests 2101.1.36, FTB Library 2101.1.37, FTB Teams
+    // 2101.1.11. Architectury is FTB Quests' own required dependency, so the
+    // gametest server and dev runs need it too. CurseMaven carries no
+    // transitive dependencies, hence one coordinate per mod.
+    compileOnly 'curse.maven:ftb-quests-289412:8885017' // ftb-quests-neoforge-2101.1.36
+    runtimeOnly 'curse.maven:ftb-quests-289412:8885017'
+    compileOnly 'curse.maven:ftb-library-forge-404465:9008089' // ftb-library-neoforge-2101.1.37
+    runtimeOnly 'curse.maven:ftb-library-forge-404465:9008089'
+    compileOnly 'curse.maven:ftb-teams-404468:8724782' // ftb-teams-neoforge-2101.1.11
+    runtimeOnly 'curse.maven:ftb-teams-404468:8724782'
+    compileOnly 'curse.maven:architectury-419699:8492726' // architectury (1.21.1)
+    runtimeOnly 'curse.maven:architectury-419699:8492726'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// --- GameTest harness -------------------------------------------------------
+
+// Grade the run on the log summary, not the exit code: the GameTestServer prints
+// "All N required tests passed :)" when every required test succeeds. Keep
+// expectedTests in sync with the @GameTest methods in src/gametest.
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    def expectedTests = 1
+    doLast {
+        def log = file('run/logs/latest.log')
+        if (!log.exists()) {
+            throw new GradleException("GameTest produced no log at ${log}")
+        }
+        def text = log.text
+        def problems = []
+        def passMatcher = (text =~ /All (\d+) required tests passed/)
+        if (passMatcher.find()) {
+            def passed = passMatcher.group(1) as int
+            if (passed != expectedTests) {
+                problems << "only ${passed}/${expectedTests} tests passed"
+            }
+        } else if ((text =~ /\d+ required tests failed/).find()) {
+            problems << 'GameTest reported failed tests'
+        } else {
+            problems << 'no GameTest summary found in log'
+        }
+        if (text.contains('Encountered an unexpected exception')) {
+            problems << 'server crashed during tests'
+        }
+        if (problems) {
+            throw new GradleException("GameTest failed: ${problems.join('; ')} - see ${log}")
+        }
+        logger.lifecycle("GameTest OK: all ${expectedTests} tests passed")
+    }
+}
+
+// --- Publishing -------------------------------------------------------------
+
+// Every repo in the org publishes its artifact to the org's GitHub Packages
+// Maven registry for alpha, beta and stable releases (see agents/AGENTS.md):
+// release.yml cuts the GitHub release, publish.yml runs on "release published"
+// and drives this block. Credentials come from the workflow token in CI; a
+// local publish can supply gpr.user / gpr.key in ~/.gradle/gradle.properties.
+// Keep the URL pointing at THIS repository - the rename checklist covers it.
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+            artifactId = mod_id
+            pom {
+                name = mod_name
+                description = mod_description
+                licenses {
+                    license {
+                        name = mod_license
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/HexaHexes/tensura-quests')
+            credentials {
+                username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
+                password = System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
+            }
+        }
+    }
+}
+
+// --- Static analysis (enforced) ----------------------------------------------
+// Both tools gate in the `static` CI job: SpotBugs findings fail
+// `spotbugsMain` and Spotless violations fail `spotlessCheck`. SpotBugs sits
+// on the `check` graph, so `./gradlew build` fails on findings too; Spotless
+// stays detached (`enforceCheck false`), keeping the junit job's build
+// style-agnostic by design - the static check is the style gate, junit is
+// not. The SpotBugs HTML report still uploads as the `spotbugs-report`
+// artifact every run (the CI step uses if: always()).
+spotbugs {
+    effort = com.github.spotbugs.snom.Effort.MAX
+    // Shared EI_EXPOSE_REP/EI_EXPOSE_REP2 exclusions; scope rule in the file.
+    excludeFilter = file('config/spotbugs-exclude.xml')
+}
+
+spotbugsTest {
+    enabled = false
+}
+
+spotbugsMain {
+    // HTML report into build/reports/spotbugs for the CI artifact upload.
+    reports {
+        html.required = true
+        xml.required = false
+    }
+}
+
+spotless {
+    enforceCheck false
+    java {
+        // Minimal profile only: no formatter, so no repo-wide rewrites.
+        // Trailing whitespace, final newline, deterministic import order.
+        target 'src/*/java/**/*.java'
+        trimTrailingWhitespace()
+        endWithNewline()
+        importOrder()
+    }
+}

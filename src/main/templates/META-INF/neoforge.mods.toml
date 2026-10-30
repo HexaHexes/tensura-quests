@@ -1,0 +1,78 @@
+# Mod metadata file. Values written in dollar-brace form are replaced at build
+# time from gradle.properties (see generateModMetadata in build.gradle), so mod
+# identity is edited in one place only.
+# See https://docs.neoforged.net/docs/concepts/modfiles/ for the full schema.
+
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+description = '''${mod_description}'''
+
+[modproperties.${mod_id}]
+# Optional: background texture for this mod's Configured config screen (see the
+# In-game config editing section of README.md). Any existing texture works.
+configuredBackground = "minecraft:textures/block/stone.png"
+
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neo_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+# tensura-quests-api: the framework implements its contracts, so it is
+# required rather than optional. The range is derived from api_version in
+# gradle.properties, the same value build.gradle resolves.
+[[dependencies.${mod_id}]]
+modId = "tensura_quests_api"
+type = "required"
+versionRange = "[${api_version},)"
+ordering = "BEFORE"
+side = "BOTH"
+
+# The pack's FTB Quests stack. This mod registers custom task and reward types
+# into FTB Quests, so nothing here works without the stack; the ranges pin the
+# versions the integration was verified against (see the compatibility matrix
+# in docs/research/) and resolution is by mod id, so later 2101.1.x builds
+# satisfy them. Architectury is FTB Quests' own dependency and needs no entry
+# here - FTB Quests declares it.
+[[dependencies.${mod_id}]]
+modId = "ftbquests"
+type = "required"
+versionRange = "[2101.1.36,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "ftblibrary"
+type = "required"
+versionRange = "[2101.1.37,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "ftbteams"
+type = "required"
+versionRange = "[2101.1.11,)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Add your mod's dependencies below. Use type = "optional" for anything the mod
+# works without, and gate the code that touches it (mixins, registrations) so it
+# no-ops when the dependency is absent.
