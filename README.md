@@ -26,12 +26,9 @@ Every task and reward validates against the gameplay system that owns the
 state. Nothing here duplicates a gameplay system, and no progress is granted
 from client-side data.
 
-## Getting it in-game
-
-Install the mod (and its dependencies) on the server; the new task and reward
-types then appear in the FTB Quests editor when you build a quest. Players
-need no actions beyond playing: progress updates automatically from the
-gameplay systems.
+The new task and reward types appear in the FTB Quests editor as you build a
+quest. Players need no actions beyond playing: progress updates automatically
+from the gameplay systems.
 
 ## Dependencies
 
@@ -61,3 +58,5 @@ Copyright (c) 2026 Bitwise Madness.
 ## AI disclosure
 
 Parts of this project were written with the assistance of AI coding tools.
+AI-assisted code, data and documentation ship only after human review by the
+maintainers.
