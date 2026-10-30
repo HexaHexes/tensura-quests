@@ -6,6 +6,8 @@ import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.bitwisemadness.tensuraquests.TensuraQuests;
 import org.bitwisemadness.tensuraquests.framework.FtbQuestsBridge;
 import org.bitwisemadness.tensuraquests.framework.TensuraTask;
@@ -102,7 +104,10 @@ public final class CounterTask extends TensuraTask {
     }
 
     @Override
+    @OnlyIn(Dist.CLIENT)
     public void fillConfigGroup(ConfigGroup group) {
+        // Client-only, like AdvancementTask's override upstream: the
+        // editor path never runs on a dedicated server.
         super.fillConfigGroup(group);
         group.addLong(TARGET_KEY, target, value -> target = clampTarget(value),
             DEFAULT_TARGET, MIN_TARGET, MAX_TARGET);

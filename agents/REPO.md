@@ -25,11 +25,17 @@ gameplay state nor quest structure.
   Infinite Dungeon suite, Lightman's Currency (pinned `2.3.0.6`).
 
 **Test:** `./gradlew runGameTestServer` - `TensuraQuestsGameTests` (1
-namespace-gate test) plus `FtbQuestsFrameworkGameTests` (5 framework tests:
+namespace-gate test), `FtbQuestsFrameworkGameTests` (5 framework tests:
 registration, SNBT round-trip, net round-trip, intake to completion with
-logging, TeamData persistence), 6 total. `expectedTests = 6` in
-`build.gradle` must match the `@GameTest` count. The run carries the FTB
-stack via `runtimeOnly` and is namespace-gated to `tensura_quests`.
+logging, TeamData persistence) and `FtbQuestsRewardGameTests` (7 reward
+tests: registration, SNBT and net round-trips, claim execution, failed
+claim release-and-retry, duplicate-claim protection, per-player scope
+forcing), 13 total. `expectedTests = 13` in `build.gradle` must match the
+`@GameTest` count. The run carries the FTB stack via `runtimeOnly` and is
+namespace-gated to `tensura_quests`. `TestQuestFile` and
+`CapturingAppender` are shared, package-private helpers in the gametest
+source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`) lives in
+`src/test`.
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).

@@ -10,25 +10,18 @@ import dev.ftb.mods.ftbquests.quest.TeamData;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
-import org.apache.logging.log4j.core.config.Property;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.bitwisemadness.tensuraquests.TensuraQuests;
 import org.bitwisemadness.tensuraquests.framework.FtbQuestsBridge;
 import org.bitwisemadness.tensuraquests.framework.IntakeOutcome;
@@ -209,43 +202,6 @@ public final class FtbQuestsFrameworkGameTests {
         helper.succeed();
     }
 
-    /** An isolated quest file standing in for ServerQuestFile/ClientQuestFile. */
-    private static final class TestQuestFile extends BaseQuestFile {
-
-        private final Env side;
-        private final HolderLookup.Provider registries;
-
-        private TestQuestFile(Env side, HolderLookup.Provider registries) {
-            this.side = side;
-            this.registries = registries;
-        }
-
-        @Override
-        public Env getSide() {
-            return side;
-        }
-
-        @Override
-        public HolderLookup.Provider holderLookup() {
-            return registries;
-        }
-
-        @Override
-        public boolean deleteObjects(List<Long> ids) {
-            return false;
-        }
-
-        @Override
-        public boolean isPlayerOnTeam(Player player, TeamData data) {
-            return false;
-        }
-
-        @Override
-        public String getLocale() {
-            return "en_us";
-        }
-    }
-
     /** One quest file with a single chapter, quest and team. */
     private static final class Fixture {
 
@@ -276,41 +232,5 @@ public final class FtbQuestsFrameworkGameTests {
         chapter.addQuest(quest);
         TeamData team = file.getOrCreateTeamData(UUID.randomUUID());
         return new Fixture(file, quest, team);
-    }
-
-    /** Log4j appender collecting this mod's log lines for the FR-012 assertions. */
-    private static final class CapturingAppender extends AbstractAppender {
-
-        private final List<String> messages = new CopyOnWriteArrayList<>();
-
-        private CapturingAppender() {
-            super("tensura_quests_framework_capture", null, PatternLayout.createDefaultLayout(),
-                false, Property.EMPTY_ARRAY);
-        }
-
-        @Override
-        public void append(LogEvent event) {
-            messages.add(event.getMessage().getFormattedMessage());
-        }
-
-        /**
-         * @param fragments every fragment that must appear in one log line
-         * @return true when a captured line contains all fragments
-         */
-        private boolean hasMessage(String... fragments) {
-            for (String message : messages) {
-                boolean all = true;
-                for (String fragment : fragments) {
-                    if (!message.contains(fragment)) {
-                        all = false;
-                        break;
-                    }
-                }
-                if (all) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 }
