@@ -47,6 +47,11 @@ jobs:
           cache: gradle
 
       - name: Build and run JUnit suite
+        env:
+          # The api artifact resolves from GitHub Packages, and the workflow's
+          # own token cannot read a package owned by another repository - this
+          # step needs the read secret, scoped to Gradle steps only.
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_READ_TOKEN }}
         run: ./gradlew build --no-daemon --stacktrace
 
       # gradlew build reports SUCCESS when there are no test sources at all -
@@ -86,6 +91,8 @@ jobs:
       # The checks themselves are the ones proven green on
       # tensura-iaf-growth's build job and tensura-iss-growth#18.
       - name: Regenerate the datapack and fail on drift
+        env:
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_READ_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -172,6 +179,8 @@ jobs:
       # still returned BUILD SUCCESSFUL. The success line in the log is the
       # only trustworthy signal, so this step never decides the job outcome.
       - name: Run GameTest server
+        env:
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_READ_TOKEN }}
         run: |
           set +e
           ./gradlew runGameTestServer --no-daemon 2>&1 | tee gametest.log
