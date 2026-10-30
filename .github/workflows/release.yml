@@ -84,6 +84,11 @@ jobs:
 
       - name: Build the jar
         if: steps.resolve.outputs.skip == 'false'
+        env:
+          # Step-scoped read token for the cross-repo dependency: the
+          # workflow's own token cannot read a package owned by another
+          # repository (pseudocore#85 for the full pattern).
+          PACKAGE_READ_TOKEN: ${{ secrets.PACKAGE_READ_TOKEN }}
         run: ./gradlew build --no-daemon --stacktrace
 
       - name: Publish the release
