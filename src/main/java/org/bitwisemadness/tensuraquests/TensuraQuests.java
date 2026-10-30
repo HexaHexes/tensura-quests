@@ -3,6 +3,7 @@ package org.bitwisemadness.tensuraquests;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import org.bitwisemadness.tensuraquests.framework.FtbQuestsBridge;
 import org.slf4j.Logger;
 
 /**
@@ -27,6 +28,11 @@ public final class TensuraQuests {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public TensuraQuests(IEventBus modBus) {
+        // Registration is a class-load side effect of FTB Quests'
+        // TaskTypes, so the bridge runs here: the built-in types
+        // register when that class first loads, then ours join the
+        // same static registry (see FtbQuestsBridge, INT-003).
+        FtbQuestsBridge.registerTypes();
         LOGGER.info("Tensura Quests initialized");
     }
 }
