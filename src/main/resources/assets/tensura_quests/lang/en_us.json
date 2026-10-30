@@ -1,5 +1,9 @@
 {
   "ftbquests.task.tensura_quests.counter": "Counter",
   "ftbquests.task.tensura_quests.counter.target": "Target",
-  "ftbquests.task.tensura_quests.counter.target.tooltip": "Progress required before the quest completes. Intake beyond it is clamped."
+  "ftbquests.task.tensura_quests.counter.target.tooltip": "Progress required before the quest completes. Intake beyond it is clamped.",
+  "ftbquests.reward.tensura_quests.message": "Message",
+  "ftbquests.reward.tensura_quests.message.message": "Message",
+  "ftbquests.reward.tensura_quests.message.message.tooltip": "Text shown to the claiming player. A blank message fails the claim loudly and stays claimable.",
+  "tensura_quests.reward.claim_failed": "Reward could not be granted: %s"
 }
