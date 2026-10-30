@@ -38,7 +38,11 @@ run carries the FTB stack via `runtimeOnly` and is namespace-gated to
 
 - `tensura-quests-api` resolves from GitHub Packages (`api_version` in
   `gradle.properties` must name a **published** version - publish the api
-  repo before bumping this repo's dependency).
+  repo before bumping this repo's dependency). Every Gradle CI step needs the
+  step-scoped `PACKAGE_READ_TOKEN` (pseudocore#85 pattern) - the workflow's
+  own token cannot read a package owned by another repository. The template's
+  workflows predate this pattern; do not regress the env blocks added to the
+  junit, runData, GameTest and release build steps.
 - Sympathetic Jobs is closed-source (All Rights Reserved) and the job-slot
   entitlement lives in non-`api` internal classes (`JobsStateManager`,
   `JobsPlayerState`). Every touch of `dev.fatsan.sympatheticjobs` goes through
