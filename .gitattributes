@@ -3,6 +3,7 @@
 # "LF will be replaced by CRLF" warnings). gradlew.bat stays CRLF - batch files need it.
 
 *.gradle     text eol=lf
+*.java       text eol=lf
 gradlew      text eol=lf
 *.properties text eol=lf
 *.toml       text eol=lf
