@@ -68,7 +68,11 @@ public final class TensuraQuests {
         SjVersionGate.Verdict verdict = SjVersionGate.evaluate(
             SjVersionGate.PINNED_VERSION, SjPresence.installedVersion().orElse(null));
         if (verdict.usable()) {
+            // One gate, one family: job tasks and the slot reward both
+            // register (the reward's write path re-checks the gate per
+            // claim, FR-024).
             FtbQuestsBridge.registerJobTaskTypes();
+            FtbQuestsBridge.registerJobSlotReward();
         } else if (verdict.result() == SjVersionGate.Result.ABSENT) {
             LOGGER.info("job task family disabled: {}", verdict.describe());
         } else {

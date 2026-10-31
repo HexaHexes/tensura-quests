@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.bitwisemadness.tensuraquests.TensuraQuests;
 
 /**
  * The single read-path adapter onto Sympathetic Jobs (D3, INT-002,
@@ -95,6 +96,75 @@ public final class SympatheticJobs {
         return JobId.byId(jobName)
             .map(JobId::displayName)
             .orElseGet(() -> Component.literal(String.valueOf(jobName)));
+    }
+
+    /**
+     * The slot-entitlement write path (D3, FR-023/FR-024): raise the
+     * player's effective job-slot limit by {@code amount} through
+     * Sympathetic Jobs' own override and let it persist (its player
+     * attachment) and sync ({@code reconcileAndSync}) - no slot
+     * counter of ours exists anywhere (SEC-007).
+     *
+     * <p>Verification is part of the grant: the override is clamped by
+     * Sympathetic Jobs to its total job count, so a raise past the cap
+     * cannot be silently partial - the entitlement is rolled back to
+     * exactly what it was and the claim fails loudly (FR-007: nothing
+     * granted). The version gate runs first: an off-pin jar blocks
+     * with a logged failure instead of touching state (FR-024).</p>
+     *
+     * @param player the claiming player; server-side only
+     * @param amount strictly positive number of slots to add
+     * @return the new effective slot limit, empty on any loud failure
+     */
+    public static OptionalInt grantJobSlots(ServerPlayer player, int amount) {
+        return grantJobSlots(player, amount, SjPresence.installedVersion().orElse(null));
+    }
+
+    /**
+     * The write path with a forced installed-version string - the
+     * FR-024 test seam: GameTests drive {@code "9.9.9"} to prove the
+     * gate blocks a claim end-to-end, without any global state the
+     * parallel batch could race on. Production callers use the
+     * two-argument form.
+     *
+     * @param player the claiming player; server-side only
+     * @param amount strictly positive number of slots to add
+     * @param installedVersion the installed version to gate against
+     * @return the new effective slot limit, empty on any loud failure
+     */
+    public static OptionalInt grantJobSlots(ServerPlayer player, int amount, String installedVersion) {
+        SjVersionGate.Verdict verdict = SjVersionGate.evaluate(SjVersionGate.PINNED_VERSION, installedVersion);
+        Optional<String> blocked = SjVersionGate.claimBlocked(verdict);
+        if (blocked.isPresent()) {
+            TensuraQuests.LOGGER.error("job slot grant failed integration=sympathetic_jobs reason=version_gate player={} {}",
+                player.getUUID(), blocked.get());
+            return OptionalInt.empty();
+        }
+        if (amount <= 0) {
+            TensuraQuests.LOGGER.error("job slot grant failed integration=sympathetic_jobs reason=invalid_amount amount={} player={}",
+                amount, player.getUUID());
+            return OptionalInt.empty();
+        }
+
+        JobsPlayerState state = JobsStateManager.get(player);
+        OptionalInt previousOverride = state.slotLimitOverride();
+        int before = JobsStateManager.effectiveSlotLimit(player);
+        int target = before + amount;
+        state.setSlotLimitOverride(target); // Sympathetic Jobs clamps to [1, its total job count]
+        JobsStateManager.reconcileAndSync(player);
+        int after = JobsStateManager.effectiveSlotLimit(player);
+        if (after < target) {
+            // Clamped at the cap or refused: restore the entitlement
+            // exactly (null clears a previously absent override) so a
+            // failed grant leaves nothing behind.
+            state.setSlotLimitOverride(previousOverride.isPresent() ? previousOverride.getAsInt() : null);
+            JobsStateManager.reconcileAndSync(player);
+            TensuraQuests.LOGGER.error(
+                "job slot grant failed integration=sympathetic_jobs reason=slot_limit_clamped before={} requested={} after={} player={}",
+                before, target, after, player.getUUID());
+            return OptionalInt.empty();
+        }
+        return OptionalInt.of(after);
     }
 
     private static List<String> jobNamesFromJobIds() {

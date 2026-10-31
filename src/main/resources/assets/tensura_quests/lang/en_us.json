@@ -35,5 +35,8 @@
   "ftbquests.reward.tensura_quests.message": "Message",
   "ftbquests.reward.tensura_quests.message.message": "Message",
   "ftbquests.reward.tensura_quests.message.message.tooltip": "Text shown to the claiming player. A blank message fails the claim loudly and stays claimable.",
+  "ftbquests.reward.tensura_quests.unlock_job_slot": "Unlock Job Slot",
+  "ftbquests.reward.tensura_quests.unlock_job_slot.slots": "Job slots",
+  "ftbquests.reward.tensura_quests.unlock_job_slot.slots.tooltip": "Slots added to the claiming player's own permanent job-slot limit. Theirs alone - a teammate's claim never grants your slots. If the total would exceed what Sympathetic Jobs allows, nothing is granted and the claim stays open.",
   "tensura_quests.reward.claim_failed": "Reward could not be granted: %s"
 }

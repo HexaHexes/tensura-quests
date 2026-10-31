@@ -14,9 +14,11 @@ questbook, dependencies, completion and rewards display.
   once) and **Job Participation** (hold a job at all, any level).
   Progress updates on its own while you play - the job system stays
   the source of truth and the quest only reads it.
-- **Job-slot rewards** - a quest reward that grants an extra job slot through
-  Sympathetic Jobs' own entitlement state, so the unlock persists everywhere
-  the job system looks.
+- **Job-slot rewards** - a quest reward that grants extra job slots (a
+  configurable amount per claim) through Sympathetic Jobs' own
+  entitlement state, so the unlock persists everywhere the job
+  system looks. Only your claim grants your slots; a grant that would
+  exceed what the job system allows grants nothing and stays claimable.
 - **Dungeon milestones** - tasks that count real Infinite Dungeon progress:
   floors entered, layers completed, minibosses slain, validated against the
   dungeon dimension you were actually in.
