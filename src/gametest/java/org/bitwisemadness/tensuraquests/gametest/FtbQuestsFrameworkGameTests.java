@@ -380,6 +380,38 @@ public final class FtbQuestsFrameworkGameTests {
         helper.assertTrue(survivor.get(6803L) == 9L,
             "valid keys next to a corrupt one must survive, got " + survivor.get(6803L));
         helper.assertTrue(survivor.get(1L) == 0L, "the corrupt key must contribute nothing");
+
+        // Partner sets (FR-042's storage): round-trip, distinctness
+        // semantics, and the v1 additive read - a pre-partners save
+        // decodes with empty sets at its own stored version.
+        java.util.UUID partnerA = java.util.UUID.randomUUID();
+        java.util.UUID partnerB = java.util.UUID.randomUUID();
+        store.addPartner(6801L, partnerA);
+        helper.assertTrue(store.addPartner(6801L, partnerB), "a new partner must report as new");
+        helper.assertFalse(store.addPartner(6801L, partnerA), "a repeated partner must not report as new");
+        helper.assertTrue(store.hasPartner(6801L, partnerA), "recorded partners must read back");
+        DataResult<Tag> partnerEncoded = PersonalCounterStore.CODEC.encodeStart(NbtOps.INSTANCE, store);
+        helper.assertTrue(partnerEncoded.result().isPresent(), "partner data must encode to NBT");
+        PersonalCounterStore partnerRestored = PersonalCounterStore.CODEC
+            .parse(NbtOps.INSTANCE, partnerEncoded.result().orElseThrow())
+            .result()
+            .orElseThrow();
+        helper.assertTrue(partnerRestored.hasPartner(6801L, partnerA)
+                && partnerRestored.hasPartner(6801L, partnerB)
+                && partnerRestored.get(6801L) == 7L,
+            "the round-trip must keep partners and counters together");
+        helper.assertTrue(partnerRestored.version() == PersonalCounterStore.CURRENT_VERSION,
+            "the round-trip must keep the layout version, got " + partnerRestored.version());
+
+        CompoundTag v1Raw = new CompoundTag();
+        v1Raw.putInt("version", 1);
+        v1Raw.put("counters", counters);
+        DataResult<PersonalCounterStore> v1 = PersonalCounterStore.CODEC.parse(NbtOps.INSTANCE, v1Raw);
+        helper.assertTrue(v1.result().isPresent(), "a v1 (counters-only) save must decode additively");
+        PersonalCounterStore v1Store = v1.result().orElseThrow();
+        helper.assertTrue(v1Store.version() == 1, "the stored v1 version must be preserved, got " + v1Store.version());
+        helper.assertFalse(v1Store.hasPartner(6801L, partnerA),
+            "a v1 save has no partner data - it must read as none, not fail");
         helper.succeed();
     }
 }

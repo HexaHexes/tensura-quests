@@ -20,8 +20,15 @@ questbook, dependencies, completion and rewards display.
 - **Dungeon milestones** - tasks that count real Infinite Dungeon progress:
   floors entered, layers completed, minibosses slain, validated against the
   dungeon dimension you were actually in.
-- **Economy tasks** - objectives driven by genuine Lightman's Currency
-  transactions, not by carrying items around.
+- **Economy tasks** - three quest task types driven by real Lightman's
+  Currency trades: **Player Transaction** (complete N trades - your
+  purchases and your shop's sales both count, each side its own
+  objective), **Sales Milestone** (sell coins' worth from your own
+  traders) and **Trading Partner** (trade with N different players -
+  repeating the same player counts once). Only completed sales move
+  the bar, trades between teammates count only when the quest author
+  turns that on, and trading with yourself never counts - so
+  alternate accounts cannot farm an objective nobody can see.
 - **Faction Capitals tasks** - ownership and contribution objectives, once the
   capital system ships its contracts.
 
@@ -45,7 +52,7 @@ from the gameplay systems.
 | Required | Tensura Quests API | The contracts this mod implements |
 | Optional | Sympathetic Jobs | Job tasks and job-slot rewards; absent or off-pin, those types stay disabled |
 | Optional | Infinite Dungeon + API | Dungeon tasks; absent, those types refuse to progress |
-| Optional | Lightman's Currency | Economy tasks; absent, those types refuse to progress |
+| Optional | Lightman's Currency | Economy tasks; absent, those types stay disabled |
 
 ## Credits
 

@@ -11,7 +11,10 @@ import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.Team;
 import dev.ftb.mods.ftbteams.api.TeamManager;
 import dev.ftb.mods.ftbteams.api.TeamRank;
+import dev.ftb.mods.ftbteams.data.AbstractTeam;
 import dev.ftb.mods.ftbteams.data.AbstractTeamBase;
+import dev.ftb.mods.ftbteams.data.PlayerTeam;
+import dev.ftb.mods.ftbteams.data.TeamManagerImpl;
 import java.util.Optional;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
@@ -97,10 +100,26 @@ final class QuestFixture {
      * read-only for membership (INT-001 keeps main src on the API),
      * so tests reach the team impl - fixture-only code.
      *
+     * <p>Beyond the forward ranks, this also aligns the <em>reverse</em>
+     * resolution FTB Teams maintains at login:
+     * {@code getTeamForPlayerID} reads {@code knownPlayers ->
+     * PlayerTeam.effectiveTeam}, which a raw ranks-only add leaves
+     * pointing at the member's own personal team. The team-trade
+     * policy (FR-044) compares <em>resolved</em> teams, so the
+     * fixture must resolve like a real join would - through the two
+     * public impl accessors, no reflection.</p>
+     *
      * @param member the player to add as a full member
      */
     void addMember(ServerPlayer member) {
-        teamImpl().addMember(member.getUUID(), TeamRank.MEMBER);
+        AbstractTeamBase team = teamImpl();
+        team.addMember(member.getUUID(), TeamRank.MEMBER);
+        if (FTBTeamsAPI.api().getManager() instanceof TeamManagerImpl manager) {
+            PlayerTeam personal = manager.getPersonalTeamForPlayerID(member.getUUID());
+            if (personal != null && team instanceof AbstractTeam effective) {
+                personal.setEffectiveTeam(effective);
+            }
+        }
     }
 
     /**
@@ -110,6 +129,24 @@ final class QuestFixture {
      */
     void removeMember(ServerPlayer member) {
         teamImpl().removeMember(member.getUUID());
+    }
+
+    /**
+     * Ensure a player has a team <em>and</em> team data in this
+     * fixture's file - event-driven economy sides need both before an
+     * intake can credit them. Players already in this fixture's team
+     * resolve to it (same instance as {@link #team}); outsiders get
+     * their own party.
+     *
+     * @param player the player to seat
+     * @return their team data in this fixture's file
+     */
+    TeamData ensureOwnTeam(ServerPlayer player) {
+        Team team = createOrReuseTeam(player);
+        if (!team.getMembers().contains(player.getUUID())) {
+            ((AbstractTeamBase) team).addMember(player.getUUID(), TeamRank.OWNER);
+        }
+        return file.getOrCreateTeamData(team);
     }
 
     private AbstractTeamBase teamImpl() {

@@ -3,6 +3,8 @@ package org.bitwisemadness.tensuraquests;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import org.bitwisemadness.tensuraquests.compat.lightmanscurrency.LcPresence;
+import org.bitwisemadness.tensuraquests.compat.lightmanscurrency.LightmansCurrencyAdapter;
 import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjPresence;
 import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjVersionGate;
 import org.bitwisemadness.tensuraquests.framework.FtbQuestsBridge;
@@ -41,6 +43,11 @@ public final class TensuraQuests {
         // the reason and leaves the family unregistered instead of
         // deferring a linkage failure to first poll (INT-004).
         registerJobTaskFamily();
+        // The economy family is presence-gated the same way (INT-004):
+        // no Lightman's Currency, no task types and no bus listener -
+        // with the reason logged rather than the family vanishing
+        // silently.
+        registerEconomyTaskFamily();
         // The per-player counter store is a NeoForge attachment
         // (ADR-0002), registered on the mod bus like Sympathetic
         // Jobs registers its own state attachment.
@@ -67,5 +74,22 @@ public final class TensuraQuests {
         } else {
             LOGGER.error("job task family disabled: {}", verdict.describe());
         }
+    }
+
+    /**
+     * Presence-gate the economy family and wire its intake listener
+     * (INT-004): absent Lightman's Currency logs the reason and
+     * leaves both unregistered; present, the three task types
+     * register first and the completed-trade listener subscribes
+     * second, so LC classes load only inside an enabled family.
+     */
+    private static void registerEconomyTaskFamily() {
+        if (!LcPresence.isInstalled()) {
+            LOGGER.info("economy task family disabled: Lightman's Currency is not installed "
+                + "(install it to enable player transaction, sales milestone and trading partner tasks)");
+            return;
+        }
+        FtbQuestsBridge.registerEconomyTaskTypes();
+        LightmansCurrencyAdapter.registerListener();
     }
 }

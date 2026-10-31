@@ -79,4 +79,33 @@ public final class ProgressAttachments {
     public static void increment(ServerPlayer player, long taskId, long amount) {
         player.getData(PERSONAL_COUNTERS.get()).increment(taskId, amount);
     }
+
+    /**
+     * Record a counterparty for a distinct-partner task, materialising
+     * the store on first use (FR-042).
+     *
+     * @param player the acting player being credited
+     * @param taskId the quest-file unique task id
+     * @param partner the counterparty's player id
+     * @return true when this partner was new for this player and task
+     */
+    public static boolean addPartner(ServerPlayer player, long taskId, java.util.UUID partner) {
+        return player.getData(PERSONAL_COUNTERS.get()).addPartner(taskId, partner);
+    }
+
+    /**
+     * Whether a counterparty is already recorded for a
+     * distinct-partner task - reads without materialising a store
+     * (members who never traded read as no partners).
+     *
+     * @param player the credited player
+     * @param taskId the quest-file unique task id
+     * @param partner the counterparty's player id
+     * @return true when previously recorded
+     */
+    public static boolean hasPartner(ServerPlayer player, long taskId, java.util.UUID partner) {
+        return player.getExistingData(PERSONAL_COUNTERS.get())
+            .map(store -> store.hasPartner(taskId, partner))
+            .orElse(false);
+    }
 }
