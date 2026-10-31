@@ -25,17 +25,19 @@ gameplay state nor quest structure.
   Infinite Dungeon suite, Lightman's Currency (pinned `2.3.0.6`).
 
 **Test:** `./gradlew runGameTestServer` - `TensuraQuestsGameTests` (1
-namespace-gate test), `FtbQuestsFrameworkGameTests` (5 framework tests:
-registration, SNBT round-trip, net round-trip, intake to completion with
-logging, TeamData persistence) and `FtbQuestsRewardGameTests` (7 reward
+namespace-gate test), `FtbQuestsFrameworkGameTests` (9 framework tests:
+registration, SNBT and net round-trips incl. the completion policy,
+intake to completion with logging, TeamData persistence, the ANY and
+ALL policies over two members, membership-churn counter isolation, the
+attachment codec round-trip) and `FtbQuestsRewardGameTests` (7 reward
 tests: registration, SNBT and net round-trips, claim execution, failed
 claim release-and-retry, duplicate-claim protection, per-player scope
-forcing), 13 total. `expectedTests = 13` in `build.gradle` must match the
+forcing), 17 total. `expectedTests = 17` in `build.gradle` must match the
 `@GameTest` count. The run carries the FTB stack via `runtimeOnly` and is
-namespace-gated to `tensura_quests`. `TestQuestFile` and
-`CapturingAppender` are shared, package-private helpers in the gametest
-source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`) lives in
-`src/test`.
+namespace-gated to `tensura_quests`. `TestQuestFile`,
+`CapturingAppender` and `MockPlayers` are shared, package-private
+helpers in the gametest source set; MC-free JUnit logic (`IntakeRules`,
+`ClaimResult`, `CounterPolicy`) lives in `src/test`.
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).
@@ -66,7 +68,14 @@ source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`) lives in
   `getType()` and touch no other registry surface.
 - Stock FTB Quests task progress is per FTB Team. Per-player counters live in
   this mod's own persisted storage (see ADR-0002); never assume a task's
-  built-in progress is per player.
+  built-in progress is per player. The FTB-visible value mirrors the
+  policy-relevant aggregate (`CounterPolicy`: max for ANY, min for ALL).
+- Gametest mock players never run the network configuration handshake, so
+  NeoForge's `NetworkRegistry.checkPacket` rejects every modded payload sent
+  to them ("may not be sent to the client"). Create mocks through
+  `MockPlayers.create` - it teaches the connection every registered payload
+  id - whenever a suite triggers modded sends; progress sync does, the
+  moment a policy mirror writes to `TeamData`.
 - The pack's team identity is FTB Teams, mirrored from Better Party by
   Better Party X FTB Teams. Never depend on Better Party directly; treat FTB
   team membership as the derived-but-authoritative-for-quests value.
