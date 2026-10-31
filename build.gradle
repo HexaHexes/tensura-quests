@@ -176,6 +176,14 @@ dependencies {
     runtimeOnly 'maven.modrinth:sympathetic-jobs:1.0.13'
     compileOnly 'maven.modrinth:sympathetic-attributes:1.1.6'
     runtimeOnly 'maven.modrinth:sympathetic-attributes:1.1.6'
+
+    // Lightman's Currency 2.3.0.6 (the pack pin, coordinate from
+    // lightmans-tensura) for the economy adapter: trade-event intake
+    // only, verified surface recorded on tensura-quests#6. Compile-side
+    // and dev-runtime only, never packaged; LC declares no mod
+    // dependencies of its own, so one coordinate suffices.
+    compileOnly 'curse.maven:lightmans-currency-472521:9048585'
+    runtimeOnly 'curse.maven:lightmans-currency-472521:9048585'
 }
 
 test {
@@ -188,7 +196,7 @@ test {
 // "All N required tests passed :)" when every required test succeeds. Keep
 // expectedTests in sync with the @GameTest methods in src/gametest.
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
-    def expectedTests = 22
+    def expectedTests = 30
     doLast {
         def log = file('run/logs/latest.log')
         if (!log.exists()) {

@@ -15,6 +15,9 @@ import org.bitwisemadness.tensuraquests.tasks.CounterTask;
 import org.bitwisemadness.tensuraquests.tasks.JobMasteryTask;
 import org.bitwisemadness.tensuraquests.tasks.JobParticipationTask;
 import org.bitwisemadness.tensuraquests.tasks.MultiJobMasteryTask;
+import org.bitwisemadness.tensuraquests.tasks.PlayerTransactionTask;
+import org.bitwisemadness.tensuraquests.tasks.SalesMilestoneTask;
+import org.bitwisemadness.tensuraquests.tasks.TradingPartnerTask;
 
 /**
  * The only contact point between this mod and FTB Quests'
@@ -66,11 +69,35 @@ public final class FtbQuestsBridge {
     /** Translation key of the job participation task's editor display name. */
     public static final String JOB_PARTICIPATION_TASK_NAME_KEY = "ftbquests.task.tensura_quests.job_participation";
 
+    /** Registration id of the Player Transaction task type (FR-040). */
+    public static final ResourceLocation PLAYER_TRANSACTION_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "player_transaction");
+
+    /** Translation key of the player transaction task's editor display name. */
+    public static final String PLAYER_TRANSACTION_TASK_NAME_KEY = "ftbquests.task.tensura_quests.player_transaction";
+
+    /** Registration id of the Sales Milestone task type (FR-041). */
+    public static final ResourceLocation SALES_MILESTONE_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "sales_milestone");
+
+    /** Translation key of the sales milestone task's editor display name. */
+    public static final String SALES_MILESTONE_TASK_NAME_KEY = "ftbquests.task.tensura_quests.sales_milestone";
+
+    /** Registration id of the Trading Partner task type (FR-042). */
+    public static final ResourceLocation TRADING_PARTNER_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "trading_partner");
+
+    /** Translation key of the trading partner task's editor display name. */
+    public static final String TRADING_PARTNER_TASK_NAME_KEY = "ftbquests.task.tensura_quests.trading_partner";
+
     private static TaskType counterTaskType;
     private static RewardType messageRewardType;
     private static TaskType jobMasteryTaskType;
     private static TaskType multiJobMasteryTaskType;
     private static TaskType jobParticipationTaskType;
+    private static TaskType playerTransactionTaskType;
+    private static TaskType salesMilestoneTaskType;
+    private static TaskType tradingPartnerTaskType;
 
     private FtbQuestsBridge() {
     }
@@ -134,6 +161,39 @@ public final class FtbQuestsBridge {
         jobParticipationTaskType.setDisplayName(Component.translatable(JOB_PARTICIPATION_TASK_NAME_KEY));
         TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
             jobParticipationTaskType.getTypeId(), jobParticipationTaskType.internalId);
+    }
+
+    /**
+     * Register the Lightman's Currency economy task family - called
+     * only after the INT-004 presence probe has ruled the mod
+     * installed, mirroring the job family's gate discipline: the task
+     * classes (and the adapter they never import) stay unloaded when
+     * the family is disabled.
+     */
+    public static void registerEconomyTaskTypes() {
+        playerTransactionTaskType = TaskTypes.register(
+            PLAYER_TRANSACTION_TASK_ID,
+            PlayerTransactionTask::new,
+            () -> Icon.getIcon("minecraft:item/emerald"));
+        playerTransactionTaskType.setDisplayName(Component.translatable(PLAYER_TRANSACTION_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            playerTransactionTaskType.getTypeId(), playerTransactionTaskType.internalId);
+
+        salesMilestoneTaskType = TaskTypes.register(
+            SALES_MILESTONE_TASK_ID,
+            SalesMilestoneTask::new,
+            () -> Icon.getIcon("minecraft:item/gold_ingot"));
+        salesMilestoneTaskType.setDisplayName(Component.translatable(SALES_MILESTONE_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            salesMilestoneTaskType.getTypeId(), salesMilestoneTaskType.internalId);
+
+        tradingPartnerTaskType = TaskTypes.register(
+            TRADING_PARTNER_TASK_ID,
+            TradingPartnerTask::new,
+            () -> Icon.getIcon("minecraft:item/map"));
+        tradingPartnerTaskType.setDisplayName(Component.translatable(TRADING_PARTNER_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            tradingPartnerTaskType.getTypeId(), tradingPartnerTaskType.internalId);
     }
 
     /**
@@ -203,6 +263,46 @@ public final class FtbQuestsBridge {
             throw new IllegalStateException(name + " task type missing: the Sympathetic Jobs version gate "
                 + "must pass (SjVersionGate " + SjVersionGate.PINNED_VERSION + " pinned) before "
                 + "FtbQuestsBridge.registerJobTaskTypes() runs");
+        }
+        return type;
+    }
+
+    /**
+     * The registered player transaction task type.
+     *
+     * @throws IllegalStateException if the economy family never
+     *         registered - Lightman's Currency absent at startup; a
+     *         quest file referencing this type then fails loudly at
+     *         construction instead of silently stalling
+     */
+    public static TaskType requirePlayerTransactionTaskType() {
+        return requireEconomyTaskType(playerTransactionTaskType, "player_transaction");
+    }
+
+    /**
+     * The registered sales milestone task type.
+     *
+     * @throws IllegalStateException if the economy family never
+     *         registered - see {@link #requirePlayerTransactionTaskType()}
+     */
+    public static TaskType requireSalesMilestoneTaskType() {
+        return requireEconomyTaskType(salesMilestoneTaskType, "sales_milestone");
+    }
+
+    /**
+     * The registered trading partner task type.
+     *
+     * @throws IllegalStateException if the economy family never
+     *         registered - see {@link #requirePlayerTransactionTaskType()}
+     */
+    public static TaskType requireTradingPartnerTaskType() {
+        return requireEconomyTaskType(tradingPartnerTaskType, "trading_partner");
+    }
+
+    private static TaskType requireEconomyTaskType(TaskType type, String name) {
+        if (type == null) {
+            throw new IllegalStateException(name + " task type missing: the Lightman's Currency presence probe "
+                + "(LcPresence) must pass before FtbQuestsBridge.registerEconomyTaskTypes() runs");
         }
         return type;
     }

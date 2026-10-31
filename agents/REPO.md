@@ -24,27 +24,36 @@ gameplay state nor quest structure.
   `1.0.13` via `maven.modrinth:sympathetic-jobs`, with its required
   Sympathetic Attributes `1.1.6` as a dev-runtime coordinate - the job task
   family registers only while the pin holds, see Gotchas), Infinite Dungeon
-  suite, Lightman's Currency (pinned `2.3.0.6`).
+  suite, Lightman's Currency (pinned `2.3.0.6` via
+  `curse.maven:lightmans-currency-472521:9048585` - the economy family
+  registers on presence alone, INT-004, see Gotchas).
 
 **Test:** `./gradlew runGameTestServer` - `TensuraQuestsGameTests` (1
 namespace-gate test), `FtbQuestsFrameworkGameTests` (9 framework tests:
 registration, SNBT and net round-trips incl. the completion policy,
 intake to completion with logging, TeamData persistence, the ANY and
 ALL policies over two members, membership-churn counter isolation, the
-attachment codec round-trip), `FtbQuestsRewardGameTests` (7 reward
-tests: registration, SNBT and net round-trips, claim execution, failed
-claim release-and-retry, duplicate-claim protection, per-player scope
-forcing) and `SympatheticJobsGameTests` (5 job tests: registration
-behind the version gate + polling/login hooks, FR-020/021/022 driven
-through the tick-dispatch entry, config round-trips incl. the
-malformed-requirement drop), 22 total. `expectedTests = 22` in
-`build.gradle` must match the `@GameTest` count. The run carries the
-FTB stack and Sympathetic Jobs + Attributes via `runtimeOnly` and is
+attachment codec round-trip incl. partner sets), 
+`FtbQuestsRewardGameTests` (7 reward tests: registration, SNBT and net
+round-trips, claim execution, failed claim release-and-retry,
+duplicate-claim protection, per-player scope forcing),
+`SympatheticJobsGameTests` (5 job tests: registration behind the
+version gate + polling/login hooks, FR-020/021/022 driven through the
+tick-dispatch entry, config round-trips incl. the
+malformed-requirement drop) and `LightmansCurrencyGameTests` (8
+economy tests: registration behind the presence gate, FR-040..FR-044
+driven through the adapter's extraction + router seam, event-type
+discrimination and U-09's playerless rule, config round-trips), 30
+total. `expectedTests = 30` in `build.gradle` must match the
+`@GameTest` count. The run carries the FTB stack, Sympathetic Jobs +
+Attributes and Lightman's Currency via `runtimeOnly` and is
 namespace-gated to `tensura_quests`. `TestQuestFile`, `QuestFixture`,
-`CapturingAppender` and `MockPlayers` are shared, package-private
-helpers in the gametest source set; MC-free JUnit logic (`IntakeRules`,
-`ClaimResult`, `CounterPolicy`, `JobRequirement`, `SjVersionGate` plus
-the INT-002 source scan) lives in `src/test` (29 tests, 7 classes).
+`CapturingAppender`, `MockPlayers` and `LcTrades` (real LC event
+construction) are shared, package-private helpers in the gametest
+source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`,
+`CounterPolicy`, `JobRequirement`, `EconomyRules`, `SjVersionGate`
+plus the two-boundary `AdapterIsolationTest` source scan) lives in
+`src/test` (35 tests, 8 classes).
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).
@@ -100,10 +109,25 @@ the INT-002 source scan) lives in `src/test` (29 tests, 7 classes).
   policy-relevant aggregate (`CounterPolicy`: max for ANY, min for ALL).
 - Gametest mock players never run the network configuration handshake, so
   NeoForge's `NetworkRegistry.checkPacket` rejects every modded payload sent
-  to them ("may not be sent to the client"). Create mocks through
-  `MockPlayers.create` - it teaches the connection every registered payload
-  id - whenever a suite triggers modded sends; progress sync does, the
-  moment a policy mirror writes to `TeamData`.
+  to them ("may not be sent to the client") - FTB Quests' progress sync on
+  the first mirror write, and Lightman's Currency's coin-list sync *during
+  login itself*. Never call `GameTestHelper.makeMockServerPlayerInLevel`
+  directly: `MockPlayers.create` replicates vanilla's placement (byte-identical
+  recipe) and teaches the connection every registered payload id *before*
+  `placeNewPlayer`, the only ordering that wins - LC registers its own
+  HIGHEST-priority login listener during mod init, so a post-placement fixup
+  and a HIGHEST listener of ours both arrive too late. Every suite routes
+  through it (reward tests included).
+- Lightman's Currency contact lives only in `compat/lightmanscurrency`
+  (extraction + router), enforced by `AdapterIsolationTest`, which scans
+  `src/main` for *both* integration roots and exempts the gametest harness.
+  The intake boundary is one subscription: `TradeEvent.PostTradeEvent` on the
+  NeoForge bus - completed trades only, never inventory or money movement
+  (SEC-004); playerless completions (command, storage-mode, automation)  extract to nothing at all (U-09's rule). Gating is presence-only per the
+  #14 spec: a future API-breaking LC fails loudly at listener registration
+  via linkage rather than silently no-opping. Distinct-partner sets live
+  inside `PersonalCounterStore` (now layout version 2 - additive `partners`
+  field, v1 saves decode with empty sets).
 - The pack's team identity is FTB Teams, mirrored from Better Party by
   Better Party X FTB Teams. Never depend on Better Party directly; treat FTB
   team membership as the derived-but-authoritative-for-quests value.

@@ -121,7 +121,7 @@ public final class FtbQuestsRewardGameTests {
         MessageReward reward = fixture.addMessageReward(REWARD_ID);
         reward.setMessage("A voice echoes: well done.");
         TeamData team = fixture.team;
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.create(helper);
         helper.assertTrue(team.isCompleted(fixture.quest),
             "fixture quest must be completed before the claim path runs");
 
@@ -157,7 +157,7 @@ public final class FtbQuestsRewardGameTests {
         MessageReward reward = fixture.addMessageReward(REWARD_ID);
         reward.setMessage("");  // blank: a real misconfiguration
         TeamData team = fixture.team;
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.create(helper);
 
         CapturingAppender capture = new CapturingAppender();
         Logger coreLogger = (Logger) LogManager.getLogger(TensuraQuests.class.getName());
@@ -193,7 +193,7 @@ public final class FtbQuestsRewardGameTests {
         MessageReward reward = fixture.addMessageReward(REWARD_ID);
         reward.setMessage("Only once");
         TeamData team = fixture.team;
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = MockPlayers.create(helper);
 
         CapturingAppender capture = new CapturingAppender();
         Logger coreLogger = (Logger) LogManager.getLogger(TensuraQuests.class.getName());
