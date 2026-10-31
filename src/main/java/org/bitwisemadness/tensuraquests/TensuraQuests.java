@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import org.bitwisemadness.tensuraquests.framework.FtbQuestsBridge;
+import org.bitwisemadness.tensuraquests.progress.ProgressAttachments;
 import org.slf4j.Logger;
 
 /**
@@ -33,6 +34,10 @@ public final class TensuraQuests {
         // register when that class first loads, then ours join the
         // same static registry (see FtbQuestsBridge, INT-003).
         FtbQuestsBridge.registerTypes();
+        // The per-player counter store is a NeoForge attachment
+        // (ADR-0002), registered on the mod bus like Sympathetic
+        // Jobs registers its own state attachment.
+        ProgressAttachments.init(modBus);
         LOGGER.info("Tensura Quests initialized");
     }
 }
