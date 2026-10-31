@@ -3,6 +3,8 @@ package org.bitwisemadness.tensuraquests;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import org.bitwisemadness.tensuraquests.compat.infinitedungeon.DungeonIntake;
+import org.bitwisemadness.tensuraquests.compat.infinitedungeon.DungeonPresence;
 import org.bitwisemadness.tensuraquests.compat.lightmanscurrency.LcPresence;
 import org.bitwisemadness.tensuraquests.compat.lightmanscurrency.LightmansCurrencyAdapter;
 import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjPresence;
@@ -48,6 +50,9 @@ public final class TensuraQuests {
         // with the reason logged rather than the family vanishing
         // silently.
         registerEconomyTaskFamily();
+        // The dungeon family follows the same shape against the Infinite
+        // Dungeon event surface (FR-030..FR-034).
+        registerDungeonTaskFamily();
         // The per-player counter store is a NeoForge attachment
         // (ADR-0002), registered on the mod bus like Sympathetic
         // Jobs registers its own state attachment.
@@ -95,5 +100,22 @@ public final class TensuraQuests {
         }
         FtbQuestsBridge.registerEconomyTaskTypes();
         LightmansCurrencyAdapter.registerListener();
+    }
+
+    /**
+     * Presence-gate the dungeon family and wire its four event listeners
+     * (INT-004): an absent Infinite Dungeon API logs the reason and leaves
+     * both unregistered; present, the task types register first and the
+     * intake subscribes second, so the event classes load only inside an
+     * enabled family.
+     */
+    private static void registerDungeonTaskFamily() {
+        if (!DungeonPresence.isInstalled()) {
+            LOGGER.info("dungeon task family disabled: Infinite Dungeon is not installed "
+                + "(install the suite to enable floor, layer, miniboss and milestone tasks)");
+            return;
+        }
+        FtbQuestsBridge.registerDungeonTaskTypes();
+        DungeonIntake.registerListeners();
     }
 }

@@ -13,8 +13,12 @@ import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjVersionGate;
 import org.bitwisemadness.tensuraquests.rewards.MessageReward;
 import org.bitwisemadness.tensuraquests.rewards.UnlockJobSlotReward;
 import org.bitwisemadness.tensuraquests.tasks.CounterTask;
+import org.bitwisemadness.tensuraquests.tasks.DungeonMilestoneTask;
+import org.bitwisemadness.tensuraquests.tasks.FloorCompletionTask;
 import org.bitwisemadness.tensuraquests.tasks.JobMasteryTask;
 import org.bitwisemadness.tensuraquests.tasks.JobParticipationTask;
+import org.bitwisemadness.tensuraquests.tasks.LayerCompletionTask;
+import org.bitwisemadness.tensuraquests.tasks.MinibossDefeatTask;
 import org.bitwisemadness.tensuraquests.tasks.MultiJobMasteryTask;
 import org.bitwisemadness.tensuraquests.tasks.PlayerTransactionTask;
 import org.bitwisemadness.tensuraquests.tasks.SalesMilestoneTask;
@@ -98,6 +102,34 @@ public final class FtbQuestsBridge {
     /** Translation key of the unlock job slot reward's editor display name. */
     public static final String UNLOCK_JOB_SLOT_REWARD_NAME_KEY = "ftbquests.reward.tensura_quests.unlock_job_slot";
 
+    /** Registration id of the Floor Completion task type (FR-030). */
+    public static final ResourceLocation FLOOR_COMPLETION_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "floor_completion");
+
+    /** Translation key of the floor completion task's editor display name. */
+    public static final String FLOOR_COMPLETION_TASK_NAME_KEY = "ftbquests.task.tensura_quests.floor_completion";
+
+    /** Registration id of the Layer Completion task type (FR-031). */
+    public static final ResourceLocation LAYER_COMPLETION_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "layer_completion");
+
+    /** Translation key of the layer completion task's editor display name. */
+    public static final String LAYER_COMPLETION_TASK_NAME_KEY = "ftbquests.task.tensura_quests.layer_completion";
+
+    /** Registration id of the Miniboss Defeat task type (FR-032). */
+    public static final ResourceLocation MINIBOSS_DEFEAT_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "miniboss_defeat");
+
+    /** Translation key of the miniboss defeat task's editor display name. */
+    public static final String MINIBOSS_DEFEAT_TASK_NAME_KEY = "ftbquests.task.tensura_quests.miniboss_defeat";
+
+    /** Registration id of the Dungeon Milestone task type (FR-034). */
+    public static final ResourceLocation DUNGEON_MILESTONE_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "dungeon_milestone");
+
+    /** Translation key of the dungeon milestone task's editor display name. */
+    public static final String DUNGEON_MILESTONE_TASK_NAME_KEY = "ftbquests.task.tensura_quests.dungeon_milestone";
+
     private static TaskType counterTaskType;
     private static RewardType messageRewardType;
     private static RewardType unlockJobSlotRewardType;
@@ -107,6 +139,10 @@ public final class FtbQuestsBridge {
     private static TaskType playerTransactionTaskType;
     private static TaskType salesMilestoneTaskType;
     private static TaskType tradingPartnerTaskType;
+    private static TaskType floorCompletionTaskType;
+    private static TaskType layerCompletionTaskType;
+    private static TaskType minibossDefeatTaskType;
+    private static TaskType dungeonMilestoneTaskType;
 
     private FtbQuestsBridge() {
     }
@@ -222,6 +258,46 @@ public final class FtbQuestsBridge {
     }
 
     /**
+     * Register the Infinite Dungeon task family - called only after the
+     * INT-004 presence probe has ruled the event surface present, so the
+     * event classes (and the intake that loads them) stay unloaded when the
+     * suite is absent.
+     */
+    public static void registerDungeonTaskTypes() {
+        floorCompletionTaskType = TaskTypes.register(
+            FLOOR_COMPLETION_TASK_ID,
+            FloorCompletionTask::new,
+            () -> Icon.getIcon("minecraft:item/ladder"));
+        floorCompletionTaskType.setDisplayName(Component.translatable(FLOOR_COMPLETION_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            floorCompletionTaskType.getTypeId(), floorCompletionTaskType.internalId);
+
+        layerCompletionTaskType = TaskTypes.register(
+            LAYER_COMPLETION_TASK_ID,
+            LayerCompletionTask::new,
+            () -> Icon.getIcon("minecraft:item/scaffolding"));
+        layerCompletionTaskType.setDisplayName(Component.translatable(LAYER_COMPLETION_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            layerCompletionTaskType.getTypeId(), layerCompletionTaskType.internalId);
+
+        minibossDefeatTaskType = TaskTypes.register(
+            MINIBOSS_DEFEAT_TASK_ID,
+            MinibossDefeatTask::new,
+            () -> Icon.getIcon("minecraft:item/nether_star"));
+        minibossDefeatTaskType.setDisplayName(Component.translatable(MINIBOSS_DEFEAT_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            minibossDefeatTaskType.getTypeId(), minibossDefeatTaskType.internalId);
+
+        dungeonMilestoneTaskType = TaskTypes.register(
+            DUNGEON_MILESTONE_TASK_ID,
+            DungeonMilestoneTask::new,
+            () -> Icon.getIcon("minecraft:item/compass"));
+        dungeonMilestoneTaskType.setDisplayName(Component.translatable(DUNGEON_MILESTONE_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            dungeonMilestoneTaskType.getTypeId(), dungeonMilestoneTaskType.internalId);
+    }
+
+    /**
      * The registered counter task type.
      *
      * @throws IllegalStateException if registration never ran - a
@@ -322,6 +398,56 @@ public final class FtbQuestsBridge {
      */
     public static TaskType requireTradingPartnerTaskType() {
         return requireEconomyTaskType(tradingPartnerTaskType, "trading_partner");
+    }
+
+    /**
+     * The registered floor completion task type.
+     *
+     * @throws IllegalStateException if the dungeon family never registered -
+     *         the Infinite Dungeon event surface absent at startup; a quest
+     *         file referencing this type then fails loudly at construction
+     *         instead of silently stalling
+     */
+    public static TaskType requireFloorCompletionTaskType() {
+        return requireDungeonTaskType(floorCompletionTaskType, "floor_completion");
+    }
+
+    /**
+     * The registered layer completion task type.
+     *
+     * @throws IllegalStateException if the dungeon family never registered -
+     *         see {@link #requireFloorCompletionTaskType()}
+     */
+    public static TaskType requireLayerCompletionTaskType() {
+        return requireDungeonTaskType(layerCompletionTaskType, "layer_completion");
+    }
+
+    /**
+     * The registered miniboss defeat task type.
+     *
+     * @throws IllegalStateException if the dungeon family never registered -
+     *         see {@link #requireFloorCompletionTaskType()}
+     */
+    public static TaskType requireMinibossDefeatTaskType() {
+        return requireDungeonTaskType(minibossDefeatTaskType, "miniboss_defeat");
+    }
+
+    /**
+     * The registered dungeon milestone task type.
+     *
+     * @throws IllegalStateException if the dungeon family never registered -
+     *         see {@link #requireFloorCompletionTaskType()}
+     */
+    public static TaskType requireDungeonMilestoneTaskType() {
+        return requireDungeonTaskType(dungeonMilestoneTaskType, "dungeon_milestone");
+    }
+
+    private static TaskType requireDungeonTaskType(TaskType type, String name) {
+        if (type == null) {
+            throw new IllegalStateException(name + " task type missing: the Infinite Dungeon presence probe "
+                + "(DungeonPresence) must pass before FtbQuestsBridge.registerDungeonTaskTypes() runs");
+        }
+        return type;
     }
 
     private static TaskType requireEconomyTaskType(TaskType type, String name) {

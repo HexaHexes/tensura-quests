@@ -116,6 +116,18 @@ repositories {
         }
     }
 
+    // infinite-dungeon-api, same GitHub Packages mechanism, different owning
+    // repository (a workflow token cannot read another repo's packages - the
+    // step-scoped PACKAGE_READ_TOKEN rule from the CI notes applies here too).
+    maven {
+        name = 'GitHubPackagesDungeon'
+        url = uri('https://maven.pkg.github.com/HexaHexes/infinite-dungeon-api')
+        credentials {
+            username = System.getenv('GITHUB_ACTOR') ?: project.findProperty('gpr.user')
+            password = System.getenv('PACKAGE_READ_TOKEN') ?: System.getenv('GITHUB_TOKEN') ?: project.findProperty('gpr.key')
+        }
+    }
+
     // The pack's FTB stack, pinned exactly via CurseMaven - never floating
     // versions. The compatibility matrix in
     // docs/research/compatibility-matrix.md records each coordinate and the
@@ -184,6 +196,13 @@ dependencies {
     // dependencies of its own, so one coordinate suffices.
     compileOnly 'curse.maven:lightmans-currency-472521:9048585'
     runtimeOnly 'curse.maven:lightmans-currency-472521:9048585'
+
+    // infinite-dungeon-api (the published event surface the dungeon tasks
+    // intake from): compile-side and dev-runtime only, never packaged - the
+    // pack ships it with the infinite-dungeon core. Version = the release
+    // carrying MinibossSlainEvent (dungeon_api_version in gradle.properties).
+    compileOnly "org.bitwisemadness.infinitedungeonapi:infinite_dungeon_api:${dungeon_api_version}"
+    runtimeOnly "org.bitwisemadness.infinitedungeonapi:infinite_dungeon_api:${dungeon_api_version}"
 }
 
 test {
@@ -196,7 +215,7 @@ test {
 // "All N required tests passed :)" when every required test succeeds. Keep
 // expectedTests in sync with the @GameTest methods in src/gametest.
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
-    def expectedTests = 37
+    def expectedTests = 44
     doLast {
         def log = file('run/logs/latest.log')
         if (!log.exists()) {

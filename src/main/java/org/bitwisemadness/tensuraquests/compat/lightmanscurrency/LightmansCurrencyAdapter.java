@@ -1,8 +1,6 @@
 package org.bitwisemadness.tensuraquests.compat.lightmanscurrency;
 
 import dev.ftb.mods.ftbquests.quest.BaseQuestFile;
-import dev.ftb.mods.ftbquests.quest.QuestObject;
-import dev.ftb.mods.ftbquests.quest.QuestObjectBase;
 import dev.ftb.mods.ftbquests.quest.ServerQuestFile;
 import io.github.lightman314.lightmanscurrency.api.events.TradeEvent;
 import io.github.lightman314.lightmanscurrency.api.misc.player.OwnerData;
@@ -10,8 +8,6 @@ import io.github.lightman314.lightmanscurrency.api.misc.player.PlayerReference;
 import io.github.lightman314.lightmanscurrency.api.ownership.Owner;
 import io.github.lightman314.lightmanscurrency.api.traders.TradeContext;
 import io.github.lightman314.lightmanscurrency.api.traders.TraderData;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -20,6 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
 import org.bitwisemadness.tensuraquests.TensuraQuests;
+import org.bitwisemadness.tensuraquests.framework.QuestObjects;
 import org.bitwisemadness.tensuraquests.tasks.EconomyRules;
 import org.bitwisemadness.tensuraquests.tasks.PlayerTransactionTask;
 import org.bitwisemadness.tensuraquests.tasks.SalesMilestoneTask;
@@ -142,38 +139,14 @@ public final class LightmansCurrencyAdapter {
                 rejection.get(), fact.buyerId(), fact.sellerId().orElse(null), fact.value());
             return;
         }
-        for (PlayerTransactionTask task : tasksOf(file, PlayerTransactionTask.class)) {
+        for (PlayerTransactionTask task : QuestObjects.collect(file, PlayerTransactionTask.class)) {
             task.onTrade(fact, file, server);
         }
-        for (SalesMilestoneTask task : tasksOf(file, SalesMilestoneTask.class)) {
+        for (SalesMilestoneTask task : QuestObjects.collect(file, SalesMilestoneTask.class)) {
             task.onTrade(fact, file, server);
         }
-        for (TradingPartnerTask task : tasksOf(file, TradingPartnerTask.class)) {
+        for (TradingPartnerTask task : QuestObjects.collect(file, TradingPartnerTask.class)) {
             task.onTrade(fact, file, server);
-        }
-    }
-
-    /** The file's tasks of one type, via the children hierarchy. */
-    private static <T> List<T> tasksOf(BaseQuestFile file, Class<T> type) {
-        List<T> found = new ArrayList<>();
-        for (QuestObjectBase root : file.getChildren()) {
-            // getChildren() is declared on QuestObject; every node of
-            // the group-chapter-quest-task chain is one.
-            if (root instanceof QuestObject node) {
-                collectInto(node, type, found);
-            }
-        }
-        return found;
-    }
-
-    private static <T> void collectInto(QuestObject object, Class<T> type, List<T> found) {
-        if (type.isInstance(object)) {
-            found.add(type.cast(object));
-        }
-        for (QuestObjectBase child : object.getChildren()) {
-            if (child instanceof QuestObject node) {
-                collectInto(node, type, found);
-            }
         }
     }
 

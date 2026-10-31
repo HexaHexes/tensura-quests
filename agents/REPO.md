@@ -24,7 +24,12 @@ gameplay state nor quest structure.
   `1.0.13` via `maven.modrinth:sympathetic-jobs`, with its required
   Sympathetic Attributes `1.1.6` as a dev-runtime coordinate - the job task
   family registers only while the pin holds, see Gotchas), Infinite Dungeon
-  suite, Lightman's Currency (pinned `2.3.0.6` via
+  suite via **infinite-dungeon-api** (pinned `dungeon_api_version` in
+  `gradle.properties` via the `GitHubPackagesDungeon` repository - the
+  published event surface, coordinate
+  `org.bitwisemadness.infinitedungeonapi:infinite_dungeon_api`; the dungeon
+  family registers only when the api mod is present), Lightman's Currency
+  (pinned `2.3.0.6` via
   `curse.maven:lightmans-currency-472521:9048585` - the economy family
   registers on presence alone, INT-004, see Gotchas).
 
@@ -43,22 +48,29 @@ tick-dispatch entry, config round-trips incl. the
 malformed-requirement drop), `LightmansCurrencyGameTests` (8 economy
 tests: registration behind the presence gate, FR-040..FR-044 driven
 through the adapter's extraction + router seam, event-type
-discrimination and U-09's playerless rule, config round-trips) and
+discrimination and U-09's playerless rule, config round-trips),
 `JobSlotRewardGameTests` (7 slot-reward tests: registration behind the
 SJ gate, FR-023 grant + effective-limit read-back, SEC-002
 single-shot, per-player isolation, forced version-gate block, clamped
 grant failing loudly with claim release, config round-trips +
-`@OnlyIn` hook), 37 total. `expectedTests = 37` in `build.gradle`
+`@OnlyIn` hook) and `DungeonTaskGameTests` (7 dungeon tests:
+registration behind the presence gate + the event-driven dispatch
+shape, FR-030 through the live bus and the fixture seam with its
+FR-012 reason log, FR-033 foreign-dimension rejection, FR-031
+attributed credit with unknown-credit-none, FR-032 layer filter with
+unknown-killer-none, FR-034 at-least thresholds, config round-trips +
+`@OnlyIn` hook), 44 total. `expectedTests = 44` in `build.gradle`
 must match the `@GameTest` count. The run carries the FTB stack,
-Sympathetic Jobs + Attributes and Lightman's Currency via
-`runtimeOnly` and is namespace-gated to `tensura_quests`.
-`TestQuestFile`, `QuestFixture`, `CapturingAppender`, `MockPlayers`
-and `LcTrades` (real LC event construction) are shared,
-package-private helpers in the gametest source set; MC-free JUnit
-logic (`IntakeRules`, `ClaimResult`, `CounterPolicy`, `JobRequirement`,
-`EconomyRules`, `SjVersionGate` incl. the FR-024 claim gate, plus the
-two-boundary `AdapterIsolationTest` source scan) lives in `src/test`
-(36 tests, 8 classes).
+Sympathetic Jobs + Attributes, Lightman's Currency and
+infinite-dungeon-api via `runtimeOnly` and is namespace-gated to
+`tensura_quests`. `TestQuestFile`, `QuestFixture`,
+`CapturingAppender`, `MockPlayers` and `LcTrades` (real LC event
+construction) are shared, package-private helpers in the gametest
+source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`,
+`CounterPolicy`, `JobRequirement`, `EconomyRules`, `SjVersionGate`
+incl. the FR-024 claim gate, plus the three-boundary
+`AdapterIsolationTest` source scan) lives in `src/test` (36 tests,
+8 classes).
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).
@@ -143,6 +155,21 @@ two-boundary `AdapterIsolationTest` source scan) lives in `src/test`
   via linkage rather than silently no-opping. Distinct-partner sets live
   inside `PersonalCounterStore` (now layout version 2 - additive `partners`
   field, v1 saves decode with empty sets).
+- Dungeon intake is the third adapter boundary: `org.bitwisemadness.infinitedungeonapi`
+  appears only in `compat/infinitedungeon` (enforced by `AdapterIsolationTest`,
+  which scans src/main for all three roots and exempts the gametest harness).
+  The family registers only on the `infinite_dungeon_api` mod's presence
+  (INT-004) and its tasks are event-driven - `autoSubmitOnPlayerTick() == 0`,
+  never polled. Candidate lookup goes through `framework.QuestObjects`
+  (the shared children-hierarchy walk; `BaseQuestFile.collect` reads the
+  load-time id map and silently collects nothing from fixture graphs - the
+  trap the economy suite first uncovered). Dimension config holds only
+  namespaced ids (validated at one point - `DungeonTask.sanitizeDimensions`,
+  since events always carry `namespace:path`); an empty list listens to
+  nothing, and foreign-dimension events log `reason=foreign_dimension` per
+  task (FR-033). Attributed-or-nothing: the adapter routes nothing without
+  an attributable, online player (ADR-0003 - unknown completers/killers
+  credit nobody, never a presence guess).
 - The pack's team identity is FTB Teams, mirrored from Better Party by
   Better Party X FTB Teams. Never depend on Better Party directly; treat FTB
   team membership as the derived-but-authoritative-for-quests value.
