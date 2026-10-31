@@ -36,7 +36,8 @@ public class AdapterIsolationTest {
 
     private static final List<Boundary> BOUNDARIES = List.of(
         new Boundary("dev.fatsan.sympatheticjobs", "org/bitwisemadness/tensuraquests/compat/sympatheticjobs/"),
-        new Boundary("io.github.lightman314", "org/bitwisemadness/tensuraquests/compat/lightmanscurrency/"));
+        new Boundary("io.github.lightman314", "org/bitwisemadness/tensuraquests/compat/lightmanscurrency/"),
+        new Boundary("org.bitwisemadness.infinitedungeonapi", "org/bitwisemadness/tensuraquests/compat/infinitedungeon/"));
 
     @Test
     public void noProductionCodeTouchesAnIntegrationOutsideItsAdapterPackage() throws IOException {

@@ -19,9 +19,12 @@ questbook, dependencies, completion and rewards display.
   entitlement state, so the unlock persists everywhere the job
   system looks. Only your claim grants your slots; a grant that would
   exceed what the job system allows grants nothing and stays claimable.
-- **Dungeon milestones** - tasks that count real Infinite Dungeon progress:
-  floors entered, layers completed, minibosses slain, validated against the
-  dungeon dimension you were actually in.
+- **Dungeon tasks** - four quest task types that read the Infinite Dungeon
+  suite's own events in the dungeon dimensions you configure: **Floor
+  Completion** (reach a floor), **Layer Completion** (clear a layer -
+  credited to whoever actually opened it), **Miniboss Defeat** (slay the
+  miniboss on a layer) and **Dungeon Milestone** (reach a depth). Only real
+  dungeon progress counts - events from other dimensions never do.
 - **Economy tasks** - three quest task types driven by real Lightman's
   Currency trades: **Player Transaction** (complete N trades - your
   purchases and your shop's sales both count, each side its own
@@ -53,7 +56,7 @@ from the gameplay systems.
 | Required | FTB Teams | Quest progress is keyed by team; parties sync into FTB Teams via Better Party X FTB Teams |
 | Required | Tensura Quests API | The contracts this mod implements |
 | Optional | Sympathetic Jobs | Job tasks and job-slot rewards; absent or off-pin, those types stay disabled |
-| Optional | Infinite Dungeon + API | Dungeon tasks; absent, those types refuse to progress |
+| Optional | Infinite Dungeon + API | Dungeon tasks; absent, those types stay disabled |
 | Optional | Lightman's Currency | Economy tasks; absent, those types stay disabled |
 
 ## Credits
