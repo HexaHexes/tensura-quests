@@ -196,7 +196,7 @@ test {
 // "All N required tests passed :)" when every required test succeeds. Keep
 // expectedTests in sync with the @GameTest methods in src/gametest.
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
-    def expectedTests = 30
+    def expectedTests = 37
     doLast {
         def log = file('run/logs/latest.log')
         if (!log.exists()) {
@@ -281,6 +281,15 @@ spotbugsTest {
 
 spotbugsMain {
     // HTML report into build/reports/spotbugs for the CI artifact upload.
+    reports {
+        html.required = true
+        xml.required = false
+    }
+}
+
+spotbugsGametest {
+    // Same layout as main so findings are readable locally and ride
+    // the CI's spotbugs-report artifact upload.
     reports {
         html.required = true
         xml.required = false

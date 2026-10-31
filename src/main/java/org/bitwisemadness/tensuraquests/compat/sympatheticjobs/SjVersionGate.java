@@ -1,5 +1,7 @@
 package org.bitwisemadness.tensuraquests.compat.sympatheticjobs;
 
+import java.util.Optional;
+
 /**
  * The Sympathetic Jobs version gate (COMP-003, D3, U-04).
  *
@@ -67,6 +69,24 @@ public final class SjVersionGate {
     }
 
     private SjVersionGate() {
+    }
+
+    /**
+     * Whether this verdict blocks a write-path claim (FR-024): the
+     * adapter's grant consults this before touching Sympathetic Jobs'
+     * state, so an off-pin jar turns a claim into a logged failure and
+     * a {@code false} result instead of a linkage error or a silent
+     * no-op. Pure so the JUnit suite pins the mapping directly.
+     *
+     * @param verdict the gate verdict for this claim
+     * @return empty when the claim may proceed, otherwise the
+     *         human-readable failure description to log
+     */
+    public static Optional<String> claimBlocked(Verdict verdict) {
+        if (verdict.usable()) {
+            return Optional.empty();
+        }
+        return Optional.of(verdict.describe());
     }
 
     /**

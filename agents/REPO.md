@@ -40,20 +40,25 @@ duplicate-claim protection, per-player scope forcing),
 `SympatheticJobsGameTests` (5 job tests: registration behind the
 version gate + polling/login hooks, FR-020/021/022 driven through the
 tick-dispatch entry, config round-trips incl. the
-malformed-requirement drop) and `LightmansCurrencyGameTests` (8
-economy tests: registration behind the presence gate, FR-040..FR-044
-driven through the adapter's extraction + router seam, event-type
-discrimination and U-09's playerless rule, config round-trips), 30
-total. `expectedTests = 30` in `build.gradle` must match the
-`@GameTest` count. The run carries the FTB stack, Sympathetic Jobs +
-Attributes and Lightman's Currency via `runtimeOnly` and is
-namespace-gated to `tensura_quests`. `TestQuestFile`, `QuestFixture`,
-`CapturingAppender`, `MockPlayers` and `LcTrades` (real LC event
-construction) are shared, package-private helpers in the gametest
-source set; MC-free JUnit logic (`IntakeRules`, `ClaimResult`,
-`CounterPolicy`, `JobRequirement`, `EconomyRules`, `SjVersionGate`
-plus the two-boundary `AdapterIsolationTest` source scan) lives in
-`src/test` (35 tests, 8 classes).
+malformed-requirement drop), `LightmansCurrencyGameTests` (8 economy
+tests: registration behind the presence gate, FR-040..FR-044 driven
+through the adapter's extraction + router seam, event-type
+discrimination and U-09's playerless rule, config round-trips) and
+`JobSlotRewardGameTests` (7 slot-reward tests: registration behind the
+SJ gate, FR-023 grant + effective-limit read-back, SEC-002
+single-shot, per-player isolation, forced version-gate block, clamped
+grant failing loudly with claim release, config round-trips +
+`@OnlyIn` hook), 37 total. `expectedTests = 37` in `build.gradle`
+must match the `@GameTest` count. The run carries the FTB stack,
+Sympathetic Jobs + Attributes and Lightman's Currency via
+`runtimeOnly` and is namespace-gated to `tensura_quests`.
+`TestQuestFile`, `QuestFixture`, `CapturingAppender`, `MockPlayers`
+and `LcTrades` (real LC event construction) are shared,
+package-private helpers in the gametest source set; MC-free JUnit
+logic (`IntakeRules`, `ClaimResult`, `CounterPolicy`, `JobRequirement`,
+`EconomyRules`, `SjVersionGate` incl. the FR-024 claim gate, plus the
+two-boundary `AdapterIsolationTest` source scan) lives in `src/test`
+(36 tests, 8 classes).
 
 **Remote:** `github.com/HexaHexes/tensura-quests` (private, default branch
 `main`).
@@ -73,13 +78,23 @@ plus the two-boundary `AdapterIsolationTest` source scan) lives in
   entitlement lives in non-`api` internal classes (`JobsStateManager`,
   `JobsPlayerState`). Every touch of `dev.fatsan.sympatheticjobs` goes through
   the single SJ adapter package (`compat/sympatheticjobs`, INT-002 - enforced
-  by `SympatheticJobsIsolationTest`, which scans src/main and exempts the
+  by `AdapterIsolationTest`, which scans src/main and exempts the
   gametest harness, the only other legal contact). The family registers only
   after `SjVersionGate` matches the `1.0.13` pin: `SjPresence` reads the
   installed version from FML *without loading any SJ class* (loading them
   before the gate rules would turn "disabled" into a linkage error), an
   absent mod logs INFO, a mismatch logs ERROR with both versions, and only
-  OK calls `FtbQuestsBridge.registerJobTaskTypes()`.
+  OK calls `FtbQuestsBridge.registerJobTaskTypes()` +
+  `registerJobSlotReward()`. The slot-reward **write path** re-checks the
+  gate per claim (`SjVersionGate.claimBlocked`: a blocked claim logs ERROR
+  and yields false, FR-024), raises the override, then *verifies*
+  `effectiveSlotLimit` actually rose - SJ clamps the override to its
+  12-job total, so an over-cap raise rolls back to the exact previous
+  entitlement and fails loudly (nothing partial is ever granted). SJ's own
+  attachment persists grants (SEC-007: we hold no slot counter), and the
+  adapter's 3-arg `grantJobSlots(..., installedVersion)` is the per-call
+  test seam for the forced-gate GameTest (no global state for the parallel
+  batch to race on).
 - Sympathetic Jobs semantics that surprised us (bytecode-verified, matters
   for the slot reward too): `level()` and `setProgress()` are gated on
   *ownership* (`hasJob`), `addJob` caps at `MAX_SLOTS` (= all 12 jobs), and

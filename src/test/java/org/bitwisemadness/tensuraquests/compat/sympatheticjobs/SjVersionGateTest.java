@@ -67,4 +67,22 @@ public class SjVersionGateTest {
         assertTrue(mismatch.contains("9.9.9") && mismatch.contains(SjVersionGate.PINNED_VERSION),
             "MISMATCH text names both versions: " + mismatch);
     }
+
+    @Test
+    public void claimProceedsOnlyUnderAnOkVerdict() {
+        // FR-024's decision: the write path may touch Sympathetic Jobs
+        // state only on an exact pin match.
+        assertTrue(SjVersionGate.claimBlocked(
+                SjVersionGate.evaluate(SjVersionGate.PINNED_VERSION, "1.0.13")).isEmpty(),
+            "an exact pin match must allow the claim");
+        assertTrue(SjVersionGate.claimBlocked(
+                SjVersionGate.evaluate(SjVersionGate.PINNED_VERSION, null)).isPresent(),
+            "an absent jar must block the claim");
+        var blocked = SjVersionGate.claimBlocked(
+            SjVersionGate.evaluate(SjVersionGate.PINNED_VERSION, "9.9.9"));
+        assertTrue(blocked.isPresent(), "an off-pin jar must block the claim");
+        assertTrue(blocked.orElseThrow().contains("9.9.9")
+                && blocked.orElseThrow().contains(SjVersionGate.PINNED_VERSION),
+            "the blocked claim must carry the failure text naming both versions: " + blocked.orElseThrow());
+    }
 }

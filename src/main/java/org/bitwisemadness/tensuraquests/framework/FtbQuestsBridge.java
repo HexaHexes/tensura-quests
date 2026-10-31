@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.bitwisemadness.tensuraquests.TensuraQuests;
 import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjVersionGate;
 import org.bitwisemadness.tensuraquests.rewards.MessageReward;
+import org.bitwisemadness.tensuraquests.rewards.UnlockJobSlotReward;
 import org.bitwisemadness.tensuraquests.tasks.CounterTask;
 import org.bitwisemadness.tensuraquests.tasks.JobMasteryTask;
 import org.bitwisemadness.tensuraquests.tasks.JobParticipationTask;
@@ -90,8 +91,16 @@ public final class FtbQuestsBridge {
     /** Translation key of the trading partner task's editor display name. */
     public static final String TRADING_PARTNER_TASK_NAME_KEY = "ftbquests.task.tensura_quests.trading_partner";
 
+    /** Registration id of the Unlock Job Slot reward type (FR-023). */
+    public static final ResourceLocation UNLOCK_JOB_SLOT_REWARD_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "unlock_job_slot");
+
+    /** Translation key of the unlock job slot reward's editor display name. */
+    public static final String UNLOCK_JOB_SLOT_REWARD_NAME_KEY = "ftbquests.reward.tensura_quests.unlock_job_slot";
+
     private static TaskType counterTaskType;
     private static RewardType messageRewardType;
+    private static RewardType unlockJobSlotRewardType;
     private static TaskType jobMasteryTaskType;
     private static TaskType multiJobMasteryTaskType;
     private static TaskType jobParticipationTaskType;
@@ -161,6 +170,22 @@ public final class FtbQuestsBridge {
         jobParticipationTaskType.setDisplayName(Component.translatable(JOB_PARTICIPATION_TASK_NAME_KEY));
         TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
             jobParticipationTaskType.getTypeId(), jobParticipationTaskType.internalId);
+    }
+
+    /**
+     * Register the Unlock Job Slot reward - called from the SAME
+     * Sympathetic Jobs version gate as the job task family (one
+     * gate, one family): an off-pin jar registers neither, and the
+     * write path re-checks the gate at claim time anyway (FR-024).
+     */
+    public static void registerJobSlotReward() {
+        unlockJobSlotRewardType = RewardTypes.register(
+            UNLOCK_JOB_SLOT_REWARD_ID,
+            UnlockJobSlotReward::new,
+            () -> Icon.getIcon("minecraft:item/gold_nugget"));
+        unlockJobSlotRewardType.setDisplayName(Component.translatable(UNLOCK_JOB_SLOT_REWARD_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests reward type {} (internalId={})",
+            unlockJobSlotRewardType.getTypeId(), unlockJobSlotRewardType.internalId);
     }
 
     /**
@@ -305,6 +330,23 @@ public final class FtbQuestsBridge {
                 + "(LcPresence) must pass before FtbQuestsBridge.registerEconomyTaskTypes() runs");
         }
         return type;
+    }
+
+    /**
+     * The registered unlock job slot reward type.
+     *
+     * @throws IllegalStateException if the Sympathetic Jobs family
+     *         never registered - SJ absent or off-pin at startup; a
+     *         quest file referencing this type then fails loudly at
+     *         construction instead of silently promising slots
+     */
+    public static RewardType requireUnlockJobSlotRewardType() {
+        if (unlockJobSlotRewardType == null) {
+            throw new IllegalStateException("unlock_job_slot reward type missing: the Sympathetic Jobs version gate "
+                + "must pass (SjVersionGate " + SjVersionGate.PINNED_VERSION + " pinned) before "
+                + "FtbQuestsBridge.registerJobSlotReward() runs");
+        }
+        return unlockJobSlotRewardType;
     }
 
     /**
