@@ -124,6 +124,16 @@ repositories {
         name = 'CurseMaven'
         url = uri('https://cursemaven.com')
     }
+
+    // Sympathetic Jobs and its required dependency Sympathetic Attributes,
+    // pinned exactly via Modrinth Maven (neither is on CurseMaven). Both are
+    // All Rights Reserved - compile-side and dev-runtime only, like the FTB
+    // stack above; never packaged. The pin is enforced at runtime by the
+    // SjVersionGate (COMP-003).
+    maven {
+        name = 'ModrinthMaven'
+        url = uri('https://api.modrinth.com/maven')
+    }
 }
 
 dependencies {
@@ -155,6 +165,17 @@ dependencies {
     runtimeOnly 'curse.maven:ftb-teams-404468:8724782'
     compileOnly 'curse.maven:architectury-419699:8492726' // architectury (1.21.1)
     runtimeOnly 'curse.maven:architectury-419699:8492726'
+
+    // Sympathetic Jobs 1.0.13 (the D3 pin) for the single version-gated
+    // adapter, plus Sympathetic Attributes - Sympathetic Jobs' own required
+    // dependency (mods.toml: sympathetic_attributes [1.1.4,)), which the
+    // gametest server needs to load SJ at all. Neither is packaged; both are
+    // ARR, touched only inside compat/sympatheticjobs (INT-002) and the
+    // gametest harness.
+    compileOnly 'maven.modrinth:sympathetic-jobs:1.0.13'
+    runtimeOnly 'maven.modrinth:sympathetic-jobs:1.0.13'
+    compileOnly 'maven.modrinth:sympathetic-attributes:1.1.6'
+    runtimeOnly 'maven.modrinth:sympathetic-attributes:1.1.6'
 }
 
 test {
@@ -167,7 +188,7 @@ test {
 // "All N required tests passed :)" when every required test succeeds. Keep
 // expectedTests in sync with the @GameTest methods in src/gametest.
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
-    def expectedTests = 17
+    def expectedTests = 22
     doLast {
         def log = file('run/logs/latest.log')
         if (!log.exists()) {
