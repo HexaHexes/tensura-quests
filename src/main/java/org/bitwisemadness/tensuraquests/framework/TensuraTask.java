@@ -141,6 +141,43 @@ public abstract class TensuraTask extends Task {
     }
 
     /**
+     * Route a state-derived evaluation into validated intake - the
+     * polling entry point for tasks whose progress mirrors live game
+     * state (job levels, dungeon floors).
+     *
+     * <p>Only a <em>positive delta</em> between the desired value and
+     * this player's own counter reaches {@link #recordValidatedIntake}:
+     * a converged player costs one counter read and no log line, and
+     * an evaluation at or below the current counter (a lowered
+     * requirement, a dropped level) is skipped rather than clawed
+     * back - personal counters are high-water marks, matching the
+     * intake-only write model. The reason string carries the desired
+     * value, so accepted and rejected intake lines both explain what
+     * the poll saw.</p>
+     *
+     * @param data the team whose mirrored progress may advance; null
+     *             or an empty evaluation is skipped silently - a
+     *             poll runs many times per minute and rejections are
+     *             logged by the intake itself
+     * @param player the player whose state was evaluated and whose
+     *               personal counter advances on acceptance
+     * @param desired the value the player's counter should reach for
+     *                their evaluated state; empty when unevaluable
+     * @param integration calling integration id, logged verbatim
+     */
+    protected final void pollState(TeamData data, ServerPlayer player, OptionalLong desired, String integration) {
+        if (data == null || player == null || desired.isEmpty()) {
+            return;
+        }
+        long wanted = desired.getAsLong();
+        long delta = wanted - ProgressAttachments.readCount(player, getId());
+        if (delta <= 0) {
+            return;
+        }
+        recordValidatedIntake(player, data, delta, integration, "auto-submit poll; desired=" + wanted);
+    }
+
+    /**
      * Evaluate {@link #completionPolicy} over the team's members and
      * mirror the result into FTB Quests' visible progress.
      *

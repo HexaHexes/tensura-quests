@@ -8,9 +8,12 @@ questbook, dependencies, completion and rewards display.
 
 ## What it does
 
-- **Job objectives** - quest tasks that read your real Sympathetic Jobs state:
-  reach a mastery level in a job, hold several jobs at once, or unlock a job
-  slot. The job system stays the source of truth; the quest only reads it.
+- **Job objectives** - three quest task types that read your real
+  Sympathetic Jobs state: **Job Mastery** (reach a chosen level in one
+  job), **Multi-Job Mastery** (reach chosen levels in several jobs at
+  once) and **Job Participation** (hold a job at all, any level).
+  Progress updates on its own while you play - the job system stays
+  the source of truth and the quest only reads it.
 - **Job-slot rewards** - a quest reward that grants an extra job slot through
   Sympathetic Jobs' own entitlement state, so the unlock persists everywhere
   the job system looks.
@@ -40,7 +43,7 @@ from the gameplay systems.
 | Required | FTB Library | FTB Quests' own dependency |
 | Required | FTB Teams | Quest progress is keyed by team; parties sync into FTB Teams via Better Party X FTB Teams |
 | Required | Tensura Quests API | The contracts this mod implements |
-| Optional | Sympathetic Jobs | Job tasks and job-slot rewards; absent, those types refuse to progress |
+| Optional | Sympathetic Jobs | Job tasks and job-slot rewards; absent or off-pin, those types stay disabled |
 | Optional | Infinite Dungeon + API | Dungeon tasks; absent, those types refuse to progress |
 | Optional | Lightman's Currency | Economy tasks; absent, those types refuse to progress |
 

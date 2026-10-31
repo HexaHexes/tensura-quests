@@ -1,24 +1,13 @@
 package org.bitwisemadness.tensuraquests.gametest;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.DataResult;
 import dev.architectury.utils.Env;
-import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftbquests.quest.BaseQuestFile;
-import dev.ftb.mods.ftbquests.quest.Chapter;
-import dev.ftb.mods.ftbquests.quest.ChapterGroup;
-import dev.ftb.mods.ftbquests.quest.Quest;
 import dev.ftb.mods.ftbquests.quest.TeamData;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
-import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
-import dev.ftb.mods.ftbteams.api.Team;
-import dev.ftb.mods.ftbteams.api.TeamManager;
-import dev.ftb.mods.ftbteams.api.TeamRank;
-import dev.ftb.mods.ftbteams.data.AbstractTeamBase;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.Optional;
-import java.util.UUID;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.gametest.framework.GameTest;
@@ -51,22 +40,17 @@ import org.bitwisemadness.tensuraquests.tasks.CounterTask;
  * (FR-008's automated half).
  *
  * <p>Every test builds an isolated {@link BaseQuestFile} subclass, so
- * no test mutates the run's real quest file. The fixture also
- * registers a <em>real</em> FTB Teams team for its players: the policy
- * mirror resolves membership through {@code TeamManager.getTeamByID},
- * and a synthetic team UUID would mirror nothing (the same reason
- * {@code TeamData.getOnlineMembers} degrades to an empty list for
- * synthetic ids) - gametest runs therefore accumulate test teams in
- * FTB Teams' saved state. Keep the {@code expectedTests} count in
- * {@code build.gradle} in sync with the number of {@code @GameTest}
- * methods here (TEST-001).</p>
+ * no test mutates the run's real quest file; the shared
+ * {@link QuestFixture} supplies the file, quest, acting player and
+ * real FTB Teams team (a synthetic team UUID would mirror nothing -
+ * see the fixture's own docs). Keep the {@code expectedTests} count
+ * in {@code build.gradle} in sync with the total {@code @GameTest}
+ * methods across the gametest source set (TEST-001).</p>
  */
 @GameTestHolder(TensuraQuests.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class FtbQuestsFrameworkGameTests {
 
-    private static final long CHAPTER_ID = 6001L;
-    private static final long QUEST_ID = 6002L;
     private static final String INTEGRATION = "tensura_quests:selftest";
 
     private FtbQuestsFrameworkGameTests() {
@@ -81,7 +65,7 @@ public final class FtbQuestsFrameworkGameTests {
         helper.assertTrue(FtbQuestsBridge.COUNTER_TASK_ID.equals(type.getTypeId()),
             "registered type id is " + type.getTypeId() + ", expected " + FtbQuestsBridge.COUNTER_TASK_ID);
 
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6101L, 5L);
         helper.assertTrue(task.getType() == type, "getType() must return the registered instance");
         helper.assertTrue(task.getMaxProgress() == 5L, "max progress must follow the configured target");
@@ -92,7 +76,7 @@ public final class FtbQuestsFrameworkGameTests {
     @GameTest(template = "empty")
     public static void counter_task_snbt_round_trip(GameTestHelper helper) {
         HolderLookup.Provider registries = helper.getLevel().registryAccess();
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask source = fixture.addCounterTask(6201L, 1L);
         source.setTarget(42L);
         source.setCompletionPolicy(CounterPolicy.ALL);
@@ -118,7 +102,7 @@ public final class FtbQuestsFrameworkGameTests {
     @GameTest(template = "empty")
     public static void counter_task_net_round_trip(GameTestHelper helper) {
         RegistryAccess registries = helper.getLevel().registryAccess();
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask source = fixture.addCounterTask(6301L, 1L);
         source.setTarget(77L);
         source.setCompletionPolicy(CounterPolicy.ALL);
@@ -145,7 +129,7 @@ public final class FtbQuestsFrameworkGameTests {
      */
     @GameTest(template = "empty")
     public static void counter_intake_progresses_and_logs(GameTestHelper helper) {
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6401L, 3L);
         TeamData team = fixture.team;
         ServerPlayer actor = fixture.actor;
@@ -190,7 +174,7 @@ public final class FtbQuestsFrameworkGameTests {
                 task.recordValidatedIntake(null, team, 1L, INTEGRATION, "missing player") == IntakeOutcome.REJECTED_NO_PROGRESS_HOLDER,
                 "intake without an acting player must be rejected");
 
-            Fixture clientFixture = newFixture(helper, Env.CLIENT);
+            QuestFixture clientFixture = QuestFixture.create(helper, Env.CLIENT);
             CounterTask clientTask = clientFixture.addCounterTask(6402L, 3L);
             helper.assertTrue(
                 clientTask.recordValidatedIntake(clientFixture.actor, clientFixture.team, 1L, INTEGRATION, "client side") == IntakeOutcome.REJECTED_NOT_SERVER_SIDE,
@@ -218,7 +202,7 @@ public final class FtbQuestsFrameworkGameTests {
      */
     @GameTest(template = "empty")
     public static void team_data_progress_survives_nbt_round_trip(GameTestHelper helper) {
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6501L, 4L);
         TeamData team = fixture.team;
 
@@ -249,7 +233,7 @@ public final class FtbQuestsFrameworkGameTests {
      */
     @GameTest(template = "empty")
     public static void any_policy_completes_when_one_member_qualifies(GameTestHelper helper) {
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6601L, 3L);
         ServerPlayer second = MockPlayers.create(helper);
         fixture.addMember(second);
@@ -286,7 +270,7 @@ public final class FtbQuestsFrameworkGameTests {
      */
     @GameTest(template = "empty")
     public static void all_policy_waits_for_every_member(GameTestHelper helper) {
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6602L, 3L);
         task.setCompletionPolicy(CounterPolicy.ALL);
         ServerPlayer second = MockPlayers.create(helper);
@@ -319,7 +303,7 @@ public final class FtbQuestsFrameworkGameTests {
      */
     @GameTest(template = "empty")
     public static void membership_churn_keeps_player_counters(GameTestHelper helper) {
-        Fixture fixture = newFixture(helper, Env.SERVER);
+        QuestFixture fixture = QuestFixture.create(helper, Env.SERVER);
         CounterTask task = fixture.addCounterTask(6603L, 5L);
         ServerPlayer second = MockPlayers.create(helper);
         fixture.addMember(second);
@@ -397,93 +381,5 @@ public final class FtbQuestsFrameworkGameTests {
             "valid keys next to a corrupt one must survive, got " + survivor.get(6803L));
         helper.assertTrue(survivor.get(1L) == 0L, "the corrupt key must contribute nothing");
         helper.succeed();
-    }
-
-    /** One quest file with a chapter, quest, a real FTB Teams team and an acting member. */
-    private static final class Fixture {
-
-        private final TestQuestFile file;
-        private final Quest quest;
-        private final TeamData team;
-        private final ServerPlayer actor;
-
-        private Fixture(TestQuestFile file, Quest quest, TeamData team, ServerPlayer actor) {
-            this.file = file;
-            this.quest = quest;
-            this.team = team;
-            this.actor = actor;
-        }
-
-        private CounterTask addCounterTask(long id, long target) {
-            CounterTask task = new CounterTask(id, quest);
-            quest.addTask(task);
-            task.setTarget(target);
-            return task;
-        }
-
-        /**
-         * Add a player to the fixture's team. The public Team API is
-         * read-only for membership (INT-001 keeps main src on the API),
-         * so tests reach the team impl - fixture-only code.
-         *
-         * @param member the player to add as a full member
-         */
-        private void addMember(ServerPlayer member) {
-            teamImpl().addMember(member.getUUID(), TeamRank.MEMBER);
-        }
-
-        /**
-         * Drop a player from the fixture's team (SEC-005 churn).
-         *
-         * @param member the player to remove
-         */
-        private void removeMember(ServerPlayer member) {
-            teamImpl().removeMember(member.getUUID());
-        }
-
-        private AbstractTeamBase teamImpl() {
-            return (AbstractTeamBase) FTBTeamsAPI.api().getManager()
-                .getTeamByID(team.getTeamId())
-                .orElseThrow(() -> new IllegalStateException("fixture team missing from FTB Teams"));
-        }
-    }
-
-    private static Fixture newFixture(GameTestHelper helper, Env side) {
-        TestQuestFile file = new TestQuestFile(side, helper.getLevel().registryAccess());
-        ChapterGroup group = file.getDefaultChapterGroup();
-        Chapter chapter = new Chapter(CHAPTER_ID, file, group);
-        group.addChapter(chapter);
-        Quest quest = new Quest(QUEST_ID, chapter);
-        chapter.addQuest(quest);
-        ServerPlayer actor = MockPlayers.create(helper);
-        Team ftbTeam = createOrReuseTeam(actor);
-        if (!ftbTeam.getMembers().contains(actor.getUUID())) {
-            // createPartyTeam is expected to seat its creator; assert
-            // rather than assume, so a behavioural change fails loudly.
-            ((AbstractTeamBase) ftbTeam).addMember(actor.getUUID(), TeamRank.OWNER);
-        }
-        TeamData team = file.getOrCreateTeamData(ftbTeam);
-        return new Fixture(file, quest, team, actor);
-    }
-
-    /**
-     * The fixture's team must exist in FTB Teams, not only in the quest
-     * file: the policy mirror resolves membership through the FTB Teams
-     * manager, where a synthetic UUID resolves to nothing.
-     *
-     * @param actor the player the team is created for
-     * @return a team the actor belongs to
-     */
-    private static Team createOrReuseTeam(ServerPlayer actor) {
-        TeamManager manager = FTBTeamsAPI.api().getManager();
-        Optional<Team> existing = manager.getTeamForPlayerID(actor.getUUID());
-        if (existing.isPresent()) {
-            return existing.get();
-        }
-        try {
-            return manager.createPartyTeam(actor, "gametest-" + actor.getUUID(), "", Color4I.WHITE);
-        } catch (CommandSyntaxException e) {
-            throw new IllegalStateException("gametest team creation failed", e);
-        }
     }
 }

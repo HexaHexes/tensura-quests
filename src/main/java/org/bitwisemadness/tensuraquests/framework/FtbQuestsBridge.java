@@ -9,8 +9,12 @@ import java.util.Optional;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.bitwisemadness.tensuraquests.TensuraQuests;
+import org.bitwisemadness.tensuraquests.compat.sympatheticjobs.SjVersionGate;
 import org.bitwisemadness.tensuraquests.rewards.MessageReward;
 import org.bitwisemadness.tensuraquests.tasks.CounterTask;
+import org.bitwisemadness.tensuraquests.tasks.JobMasteryTask;
+import org.bitwisemadness.tensuraquests.tasks.JobParticipationTask;
+import org.bitwisemadness.tensuraquests.tasks.MultiJobMasteryTask;
 
 /**
  * The only contact point between this mod and FTB Quests'
@@ -41,19 +45,45 @@ public final class FtbQuestsBridge {
     /** Translation key of the message reward's editor display name. */
     public static final String MESSAGE_REWARD_NAME_KEY = "ftbquests.reward.tensura_quests.message";
 
+    /** Registration id of the Job Mastery task type (FR-020). */
+    public static final ResourceLocation JOB_MASTERY_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "job_mastery");
+
+    /** Translation key of the job mastery task's editor display name. */
+    public static final String JOB_MASTERY_TASK_NAME_KEY = "ftbquests.task.tensura_quests.job_mastery";
+
+    /** Registration id of the Multi-Job Mastery task type (FR-021). */
+    public static final ResourceLocation MULTI_JOB_MASTERY_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "multi_job_mastery");
+
+    /** Translation key of the multi job mastery task's editor display name. */
+    public static final String MULTI_JOB_MASTERY_TASK_NAME_KEY = "ftbquests.task.tensura_quests.multi_job_mastery";
+
+    /** Registration id of the Job Participation task type (FR-022). */
+    public static final ResourceLocation JOB_PARTICIPATION_TASK_ID =
+        ResourceLocation.fromNamespaceAndPath(TensuraQuests.MOD_ID, "job_participation");
+
+    /** Translation key of the job participation task's editor display name. */
+    public static final String JOB_PARTICIPATION_TASK_NAME_KEY = "ftbquests.task.tensura_quests.job_participation";
+
     private static TaskType counterTaskType;
     private static RewardType messageRewardType;
+    private static TaskType jobMasteryTaskType;
+    private static TaskType multiJobMasteryTaskType;
+    private static TaskType jobParticipationTaskType;
 
     private FtbQuestsBridge() {
     }
 
     /**
-     * Register every task and reward type this mod ships. Called once
-     * from the mod constructor: the first reference to {@link TaskTypes}
-     * or {@link RewardTypes} runs its static initialiser (registering
-     * the built-in types), then adds ours to the same registries.
-     * Registration is idempotent - {@code computeIfAbsent} keeps the
-     * first instance per id.
+     * Register the task and reward types that ship unconditionally.
+     * Called once from the mod constructor: the first reference to
+     * {@link TaskTypes} or {@link RewardTypes} runs its static
+     * initialiser (registering the built-in types), then adds ours to
+     * the same registries. Registration is idempotent -
+     * {@code computeIfAbsent} keeps the first instance per id. The
+     * Sympathetic Jobs family registers separately through
+     * {@link #registerJobTaskTypes()}, behind the version gate.
      */
     public static void registerTypes() {
         counterTaskType = TaskTypes.register(
@@ -71,6 +101,39 @@ public final class FtbQuestsBridge {
         messageRewardType.setDisplayName(Component.translatable(MESSAGE_REWARD_NAME_KEY));
         TensuraQuests.LOGGER.info("registered FTB Quests reward type {} (internalId={})",
             messageRewardType.getTypeId(), messageRewardType.internalId);
+    }
+
+    /**
+     * Register the Sympathetic Jobs task family - called only after
+     * the version gate has ruled the installed Sympathetic Jobs
+     * acceptable (COMP-003), so the task classes and the adapter they
+     * touch are never loaded on a machine where the family stays
+     * disabled (INT-004).
+     */
+    public static void registerJobTaskTypes() {
+        jobMasteryTaskType = TaskTypes.register(
+            JOB_MASTERY_TASK_ID,
+            JobMasteryTask::new,
+            () -> Icon.getIcon("minecraft:item/experience_bottle"));
+        jobMasteryTaskType.setDisplayName(Component.translatable(JOB_MASTERY_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            jobMasteryTaskType.getTypeId(), jobMasteryTaskType.internalId);
+
+        multiJobMasteryTaskType = TaskTypes.register(
+            MULTI_JOB_MASTERY_TASK_ID,
+            MultiJobMasteryTask::new,
+            () -> Icon.getIcon("minecraft:item/enchanted_book"));
+        multiJobMasteryTaskType.setDisplayName(Component.translatable(MULTI_JOB_MASTERY_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            multiJobMasteryTaskType.getTypeId(), multiJobMasteryTaskType.internalId);
+
+        jobParticipationTaskType = TaskTypes.register(
+            JOB_PARTICIPATION_TASK_ID,
+            JobParticipationTask::new,
+            () -> Icon.getIcon("minecraft:item/player_head"));
+        jobParticipationTaskType.setDisplayName(Component.translatable(JOB_PARTICIPATION_TASK_NAME_KEY));
+        TensuraQuests.LOGGER.info("registered FTB Quests task type {} (internalId={})",
+            jobParticipationTaskType.getTypeId(), jobParticipationTaskType.internalId);
     }
 
     /**
@@ -101,6 +164,47 @@ public final class FtbQuestsBridge {
                 "message reward type missing: FtbQuestsBridge.registerTypes() must run from the mod constructor");
         }
         return messageRewardType;
+    }
+
+    /**
+     * The registered job mastery task type.
+     *
+     * @throws IllegalStateException if the job family never
+     *         registered - Sympathetic Jobs absent or off-pin at
+     *         startup; a quest file referencing this type then fails
+     *         loudly at construction instead of silently stalling
+     */
+    public static TaskType requireJobMasteryTaskType() {
+        return requireJobTaskType(jobMasteryTaskType, "job_mastery");
+    }
+
+    /**
+     * The registered multi job mastery task type.
+     *
+     * @throws IllegalStateException if the job family never
+     *         registered - see {@link #requireJobMasteryTaskType()}
+     */
+    public static TaskType requireMultiJobMasteryTaskType() {
+        return requireJobTaskType(multiJobMasteryTaskType, "multi_job_mastery");
+    }
+
+    /**
+     * The registered job participation task type.
+     *
+     * @throws IllegalStateException if the job family never
+     *         registered - see {@link #requireJobMasteryTaskType()}
+     */
+    public static TaskType requireJobParticipationTaskType() {
+        return requireJobTaskType(jobParticipationTaskType, "job_participation");
+    }
+
+    private static TaskType requireJobTaskType(TaskType type, String name) {
+        if (type == null) {
+            throw new IllegalStateException(name + " task type missing: the Sympathetic Jobs version gate "
+                + "must pass (SjVersionGate " + SjVersionGate.PINNED_VERSION + " pinned) before "
+                + "FtbQuestsBridge.registerJobTaskTypes() runs");
+        }
+        return type;
     }
 
     /**
