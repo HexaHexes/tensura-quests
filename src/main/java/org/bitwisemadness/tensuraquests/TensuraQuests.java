@@ -35,19 +35,16 @@ public final class TensuraQuests {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public TensuraQuests(IEventBus modBus) {
-        // Registration is a class-load side effect of FTB Quests'
-        // TaskTypes, so the bridge runs here: the built-in types
-        // register when that class first loads, then ours join the
-        // same static registry (see FtbQuestsBridge, INT-003).
+        // Registration is a class-load side effect of FTB Quests' TaskTypes, so the bridge runs
+        // here: the built-in types register when that class first loads, then ours join the same
+        // static registry (see FtbQuestsBridge, INT-003).
         FtbQuestsBridge.registerTypes();
-        // The Sympathetic Jobs family sits behind its version gate
-        // (D3, COMP-003): an absent or off-pin Sympathetic Jobs logs
-        // the reason and leaves the family unregistered instead of
+        // The Sympathetic Jobs family sits behind its version gate (D3, COMP-003): an absent or
+        // off-pin Sympathetic Jobs logs the reason and leaves the family unregistered instead of
         // deferring a linkage failure to first poll (INT-004).
         registerJobTaskFamily();
-        // The economy family is presence-gated the same way (INT-004):
-        // no Lightman's Currency, no task types and no bus listener -
-        // with the reason logged rather than the family vanishing
+        // The economy family is presence-gated the same way (INT-004): no Lightman's Currency, no
+        // task types and no bus listener - with the reason logged rather than the family vanishing
         // silently.
         registerEconomyTaskFamily();
         // The dungeon family follows the same shape against the Infinite

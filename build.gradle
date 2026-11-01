@@ -4,6 +4,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
     id 'com.github.spotbugs' version '6.5.13'
     id 'com.diffplug.spotless' version '8.10.4'
+    id 'checkstyle'
 }
 
 version = mod_version
@@ -292,6 +293,18 @@ spotbugs {
     effort = com.github.spotbugs.snom.Effort.MAX
     // Shared EI_EXPOSE_REP/EI_EXPOSE_REP2 exclusions; scope rule in the file.
     excludeFilter = file('config/spotbugs-exclude.xml')
+}
+checkstyle {
+    toolVersion = '10.21.0'
+    configFile = file('config/checkstyle/checkstyle.xml')
+    maxWarnings = 0
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        html.required = true
+        xml.required = true
+    }
 }
 
 spotbugsTest {

@@ -77,10 +77,9 @@ final class LcTrades {
      * @return the value
      */
     static MoneyValue price(long amount) {
-        // LC's fromNumber returns MoneyValue.empty() for non-positive
-        // amounts by design - the free-trade case uses that same
-        // canonical zero; the assertion below pins the core value for
-        // every amount either way.
+        // LC's fromNumber returns MoneyValue.empty() for non-positive amounts by design - the
+        // free-trade case uses that same canonical zero; the assertion below pins the core value
+        // for every amount either way.
         MoneyValue value = amount <= 0
             ? MoneyValue.empty()
             : CoinValue.fromNumber(CoinAPI.MAIN_CHAIN, amount);

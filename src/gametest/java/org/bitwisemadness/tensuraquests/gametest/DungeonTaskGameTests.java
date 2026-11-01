@@ -1,7 +1,6 @@
 package org.bitwisemadness.tensuraquests.gametest;
 
 import dev.architectury.utils.Env;
-import dev.ftb.mods.ftbquests.quest.TeamData;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
