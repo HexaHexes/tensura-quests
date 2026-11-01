@@ -127,10 +127,9 @@ public abstract class TensuraReward extends Reward {
 
     @Override
     public void readData(CompoundTag tag, HolderLookup.Provider registries) {
-        // Force per-player scope before the upstream reader runs: the
-        // private team Tristate is loaded from this key and has no setter.
-        // The caller's tag is copied so the load path stays side-effect
-        // free for whoever owns the NBT.
+        // Force per-player scope before the upstream reader runs: the private team Tristate is
+        // loaded from this key and has no setter. The caller's tag is copied so the load path
+        // stays side-effect free for whoever owns the NBT.
         CompoundTag forced = tag.copy();
         forced.putBoolean(TEAM_SCOPE_KEY, false);
         super.readData(forced, registries);

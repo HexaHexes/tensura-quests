@@ -128,11 +128,9 @@ public final class SympatheticJobsGameTests {
         helper.assertTrue(team.getProgress(task) == 0L,
             "a player holding no jobs must not progress job mastery, got " + team.getProgress(task));
 
-        // A different job must be active while the configured job's
-        // level counts. Sympathetic Jobs makes the first acquired job
-        // active (usable-slot limits gate switching, but levels never
-        // consult the active job - XP flows to every held job), so
-        // seed the decoy first and assert the setup property.
+        // A different job must be active while the configured job's level counts. Sympathetic Jobs
+        // makes the first acquired job active (slot limits gate switching, but levels never consult
+        // the active job - XP flows to every held job), so the decoy is seeded and the setup asserted.
         seedJobLevel(player, "farmer", 1);
         seedJobLevel(player, "miner", 2);
         JobsPlayerState state = JobsStateManager.get(player);

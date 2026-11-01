@@ -267,11 +267,9 @@ public final class FtbQuestsRewardGameTests {
         helper.assertFalse(saved.getBoolean("team_reward"),
             "writeData must persist team_reward=false, got " + saved.getBoolean("team_reward"));
 
-        // The editor's team control is locked: the scope is not the
-        // quest author's to change. The editor path that populates this
-        // group (fillConfigGroup) is @OnlyIn(Dist.CLIENT) and stripped
-        // here, so the group is seeded the way upstream populates it and
-        // the lock itself - dist-agnostic config work - runs directly.
+        // The editor's team control is locked: the scope is not the quest author's to change. The
+        // editor path that populates this group (fillConfigGroup) is @OnlyIn(Dist.CLIENT) and stripped
+        // here, so the group is seeded as upstream populates it and the lock itself runs directly.
         ConfigGroup config = new ConfigGroup("test_reward");
         ConfigValue<Boolean> teamControl = config
             .addBool("team", true, value -> {}, true)
@@ -290,9 +288,8 @@ public final class FtbQuestsRewardGameTests {
         helper.assertTrue(otherControl.getCanEdit(),
             "only the team-scope editor control may be locked");
 
-        // Our fillConfigGroup overrides must carry @OnlyIn(CLIENT) like
-        // every upstream one; a hook still present here means the
-        // annotation was lost and a server-side call would die at the
+        // Our fillConfigGroup overrides must carry @OnlyIn(CLIENT) like every upstream one; a hook
+        // still present here means the annotation was lost and a server-side call would die at the
         // stripped super - the failure this suite once chased.
         assertClientOnlyEditorHook(helper, TensuraReward.class);
         assertClientOnlyEditorHook(helper, MessageReward.class);
