@@ -73,6 +73,39 @@ versionRange = "[2101.1.11,)"
 ordering = "AFTER"
 side = "BOTH"
 
+# The README's optional task families. Each presence helper (LcPresence,
+# DungeonPresence, SjPresence) consults only FML's ModList, so absence or
+# an off-pin version keeps those task types disabled and the rest runs.
+[[dependencies.${mod_id}]]
+modId = "lightmanscurrency"
+type = "optional"
+versionRange = "[1.21-2.3.0.6,)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Literal floor on purpose: generateModMetadata's replaceProperties map has
+# no dungeon_api_version key, so a substituted token would ship unexpanded.
+[[dependencies.${mod_id}]]
+modId = "infinite_dungeon_api"
+type = "optional"
+versionRange = "[1.0.0-alpha.14,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "infinite_dungeon"
+type = "optional"
+versionRange = "[0.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "sympatheticjobs"
+type = "optional"
+versionRange = "[1.0.13,)"
+ordering = "AFTER"
+side = "BOTH"
+
 # Add your mod's dependencies below. Use type = "optional" for anything the mod
 # works without, and gate the code that touches it (mixins, registrations) so it
 # no-ops when the dependency is absent.
