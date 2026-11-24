@@ -6,8 +6,8 @@ and pulled in verbatim - **never hand-edit it.** Everything in this file is this
 repo's own and is edited freely; keep it aligned with the org rules rather than
 restating them.
 
-**Repo:** `HexaHexes/tensura-quests` - **Mod ID:** `tensura_quests` - **Branch:** `main`
-**Platform:** Minecraft 1.21.1 / NeoForge 21.1.259 / JDK 21 - **Jar:** `build/libs/tensura_quests-<version>.jar`
+**Repo:** `HexaHexes/tensura-quests` · **Mod ID:** `tensura_quests` · **Branch:** `neoforge-1.21.1` (the loader line; this is the default branch - no `main`)
+**Platform:** Minecraft 1.21.1 / NeoForge 21.1.259 / JDK 21 · **Jar:** `build/libs/tensura_quests-neoforge-1.21.1-<version>.jar`
 
 The implementation mod of the Tensura RPG FTB Quests integration ecosystem. It
 registers custom FTB Quests task and reward types - job progression, job-slot
